@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<title>DEAD ZONE - Zombie Shooter</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
+  canvas { display: block; }
+
+  #ui { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+
+  #hud {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 20px; align-items: flex-end;
+  }
+  .bar-container { text-align: center; }
+  .bar-label { color: #aaa; font-size: 10px; letter-spacing: 2px; margin-bottom: 4px; }
+  .bar { width: 160px; height: 14px; background: #111; border: 1px solid #333; border-radius: 2px; overflow: hidden; }
+  .bar-fill { height: 100%; transition: width 0.3s; border-radius: 2px; }
+  #hp-fill   { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+  #xp-fill   { background: linear-gradient(90deg, #8e44ad, #9b59b6); }
+  #ammo-fill { background: linear-gradient(90deg, #e67e22, #f39c12); }
+
+  #level-badge {
+    position: fixed; top: 20px; left: 20px;
+    background: #111; border: 2px solid #f39c12; color: #f39c12;
+    font-size: 24px; font-weight: bold; padding: 10px 18px; border-radius: 4px;
+    text-shadow: 0 0 10px #f39c12;
+  }
+  #score-display {
+    position: fixed; top: 20px; right: 20px;
+    color: #e74c3c; font-size: 28px; font-weight: bold;
+    text-shadow: 0 0 10px #e74c3c; letter-spacing: 2px;
+  }
+  #wave-display { position: fixed; top: 60px; right: 20px; color: #aaa; font-size: 14px; letter-spacing: 3px; }
+
+  #ammo-count {
+    position: fixed; bottom: 80px; right: 30px;
+    color: #f39c12; font-size: 32px; font-weight: bold; text-shadow: 0 0 10px #f39c12;
+  }
+  #weapon-badge { position: fixed; bottom: 116px; right: 30px; color: #888; font-size: 11px; letter-spacing: 2px; text-align: right; }
+  #bomb-count   { position: fixed; bottom: 155px; right: 30px; color: #ecf0f1; font-size: 20px; font-weight: bold; text-shadow: 0 0 10px rgba(0,0,0,0.9); letter-spacing: 2px; }
+
+  #potions-bar {
+    position: fixed; bottom: 20px; right: 30px;
+    display: flex; flex-direction: column; gap: 6px; align-items: flex-end;
+  }
+  .potion-slot {
+    display: flex; align-items: center; gap: 8px;
+    background: #111; border: 1px solid #333; padding: 4px 10px; border-radius: 3px;
+    font-size: 12px; color: #aaa; letter-spacing: 1px; pointer-events: all; cursor: pointer; transition: all 0.2s;
+  }
+  .potion-slot:hover { border-color: #666; color: #fff; }
+  .potion-slot .icon { font-size: 18px; }
+  .potion-slot.empty { opacity: 0.3; cursor: default; }
+
+  /* ── P2 HUD ── */
+  #p2-panel {
+    position: fixed; top: 80px; left: 20px;
+    display: none; flex-direction: column; gap: 5px;
+    pointer-events: none;
+  }
+  #p2-panel.visible { display: flex; }
+  #p2-panel .bar { width: 130px; }
+  .p2-title { color: #2ecc71; font-size: 11px; letter-spacing: 3px; margin-bottom: 2px; }
+  #p2-ammo-txt { color: #f39c12; font-size: 14px; font-weight: bold; }
+  #p2-weapon-lbl { color: #666; font-size: 10px; letter-spacing: 2px; }
+  #p2-bomb-txt  { color: #ecf0f1; font-size: 14px; font-weight: bold; }
+  #p2-potions { display: flex; gap: 6px; margin-top: 2px; font-size: 11px; color: #666; }
+
+  #kill-feed { position: fixed; top: 60px; left: 20px; display: flex; flex-direction: column; gap: 4px; }
+  .kill-msg { color: #e74c3c; font-size: 12px; letter-spacing: 1px; text-shadow: 0 0 5px rgba(231,76,60,0.5); }
+
+  #stats-display { position: fixed; bottom: 100px; left: 20px; color: #555; font-size: 11px; line-height: 1.8; letter-spacing: 1px; }
+  #stats-display span { color: #888; }
+
+  /* ── Level up ── */
+  #levelup-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); display: none; z-index: 50;
+    align-items: center; justify-content: center; flex-direction: column; pointer-events: all;
+  }
+  #levelup-screen.active { display: flex; }
+  #levelup-title { color: #f39c12; font-size: 48px; font-weight: bold; text-shadow: 0 0 30px #f39c12; margin-bottom: 10px; letter-spacing: 6px; }
+  #levelup-sub   { color: #aaa; font-size: 14px; letter-spacing: 4px; margin-bottom: 40px; }
+  .upgrade-cards { display: flex; gap: 20px; }
+  .upgrade-card {
+    background: #111; border: 2px solid #333; padding: 24px 20px; border-radius: 6px; width: 180px;
+    text-align: center; cursor: pointer; transition: all 0.2s;
+  }
+  .upgrade-card:hover { border-color: #f39c12; transform: translateY(-4px); box-shadow: 0 0 20px rgba(243,156,18,0.3); }
+  .upgrade-card .icon { font-size: 40px; margin-bottom: 12px; }
+  .upgrade-card .name { color: #fff; font-size: 14px; font-weight: bold; margin-bottom: 8px; letter-spacing: 2px; }
+  .upgrade-card .desc { color: #888; font-size: 11px; line-height: 1.5; }
+
+  /* ── Structure screen ── */
+  #structure-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.88); display: none; z-index: 50;
+    align-items: center; justify-content: center; flex-direction: column; pointer-events: all;
+  }
+  #structure-screen.active { display: flex; }
+  #structure-title { color: #3498db; font-size: 44px; font-weight: bold; text-shadow: 0 0 30px #3498db; margin-bottom: 8px; letter-spacing: 5px; }
+  #structure-sub   { color: #aaa; font-size: 13px; letter-spacing: 4px; margin-bottom: 36px; }
+
+  /* ── Game over ── */
+  #gameover-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9); display: none; z-index: 60;
+    align-items: center; justify-content: center; flex-direction: column; pointer-events: all;
+  }
+  #gameover-screen.active { display: flex; }
+  #gameover-title  { color: #e74c3c; font-size: 64px; font-weight: bold; letter-spacing: 8px; text-shadow: 0 0 40px #e74c3c; }
+  #gameover-stats  { color: #aaa; margin: 20px 0; line-height: 2; text-align: center; font-size: 16px; }
+  #restart-btn {
+    background: #e74c3c; color: #fff; border: none; padding: 14px 40px; font-size: 18px;
+    letter-spacing: 4px; cursor: pointer; font-family: inherit; margin-top: 10px; transition: all 0.2s;
+  }
+  #restart-btn:hover { background: #c0392b; transform: scale(1.05); }
+
+  /* ── Start screen ── */
+  #start-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #000; z-index: 100; display: flex;
+    align-items: center; justify-content: center; flex-direction: column; pointer-events: all;
+  }
+  .game-logo  { color: #e74c3c; font-size: 72px; font-weight: bold; letter-spacing: 12px; text-shadow: 0 0 40px #e74c3c; }
+  .game-sub   { color: #f39c12; font-size: 18px; letter-spacing: 8px; margin: 10px 0 40px; }
+  .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 40px; margin-bottom: 40px; }
+  .ctrl { color: #aaa; font-size: 12px; }
+  .ctrl span { color: #fff; }
+  .mode-btns { display: flex; gap: 16px; }
+  .mode-btn {
+    background: #e74c3c; color: #fff; border: none; padding: 16px 44px;
+    font-size: 18px; letter-spacing: 4px; cursor: pointer; font-family: inherit;
+    transition: all 0.2s; text-transform: uppercase;
+  }
+  .mode-btn:hover { background: #c0392b; box-shadow: 0 0 30px rgba(231,76,60,0.5); }
+  .mode-btn.multi { background: #27ae60; }
+  .mode-btn.multi:hover { background: #1e8449; box-shadow: 0 0 30px rgba(39,174,96,0.5); }
+
+  /* ── Weapon screen ── */
+  #weapon-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #000; z-index: 100; display: none;
+    align-items: center; justify-content: center; flex-direction: column; pointer-events: all;
+  }
+  #weapon-player-label { color: #aaa; font-size: 14px; letter-spacing: 6px; margin-bottom: 6px; }
+  #weapon-cards { display: flex; gap: 24px; margin-top: 10px; }
+  .weapon-card {
+    background: #111; border: 2px solid #333; padding: 30px 22px; border-radius: 6px; width: 200px;
+    text-align: center; cursor: pointer; transition: all 0.25s;
+  }
+  .weapon-card:hover { transform: translateY(-6px); }
+  .weapon-card.shotgun:hover      { border-color: #e74c3c; box-shadow: 0 0 28px rgba(231,76,60,0.35); }
+  .weapon-card.machinegun:hover   { border-color: #3498db; box-shadow: 0 0 28px rgba(52,152,219,0.35); }
+  .weapon-card.flamethrower:hover { border-color: #f39c12; box-shadow: 0 0 28px rgba(243,156,18,0.35); }
+  .w-icon { font-size: 52px; margin-bottom: 14px; }
+  .w-name { color: #fff; font-size: 14px; font-weight: bold; letter-spacing: 3px; margin-bottom: 14px; }
+  .w-stats { font-size: 11px; }
+  .w-stat { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #222; color: #666; }
+  .w-stat:last-child { border-bottom: none; }
+  .w-stat span:last-child { color: #f39c12; }
+
+  #damage-flash {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(231,76,60,0.0); pointer-events: none; z-index: 5; transition: background 0.1s;
+  }
+
+  #place-hint {
+    position: fixed; bottom: 180px; left: 50%; transform: translateX(-50%);
+    color: #f39c12; font-size: 16px; letter-spacing: 4px;
+    text-shadow: 0 0 20px #f39c12; pointer-events: none; z-index: 20; display: none;
+    animation: blink 0.8s step-start infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  #structure-screen.active { display: flex; }
+</style>
+</head>
+<body>
+
+<div id="start-screen">
+  <div class="game-logo">DEAD ZONE</div>
+  <div class="game-sub">ZOMBIE SURVIVAL</div>
+  <div class="controls-grid">
+    <div class="ctrl"><span>WASD</span> — Moure's (J1)</div>
+    <div class="ctrl"><span>FLETXES</span> — Moure's (J2)</div>
+    <div class="ctrl"><span>AUTO</span> — Dispara sol</div>
+    <div class="ctrl"><span>R / P</span> — Recarregar J1/J2</div>
+    <div class="ctrl"><span>SPACE / ENTER</span> — Bomba J1/J2</div>
+    <div class="ctrl"><span>1-2-3 / 7-8-9</span> — Pocions J1/J2</div>
+  </div>
+  <div class="mode-btns">
+    <button class="mode-btn" onclick="startSingle()">1 JUGADOR</button>
+    <button class="mode-btn multi" onclick="startMulti()">2 JUGADORS</button>
+  </div>
+</div>
+
+<div id="weapon-screen">
+  <div class="game-logo" style="font-size:46px;margin-bottom:4px;">TRIA LA TEVA ARMA</div>
+  <div id="weapon-player-label"></div>
+  <div class="game-sub" style="margin-bottom:28px;margin-top:4px;">CADA ARMA CANVIA LA TEVA ESTRATÈGIA</div>
+  <div id="weapon-cards"></div>
+</div>
+
+<div id="place-hint">📍 CLICA PER COL·LOCAR</div>
+
+<div id="structure-screen">
+  <div id="structure-title">RECOMPENSA DE NIVELL!</div>
+  <div id="structure-sub">COL·LOCA UNA ESTRUCTURA AL CAMP DE BATALLA</div>
+  <div class="upgrade-cards" id="structure-cards"></div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+<div id="damage-flash"></div>
+
+<div id="ui">
+  <div id="level-badge">NV <span id="level-num">1</span></div>
+  <div id="score-display">0</div>
+  <div id="wave-display">ONADA 1</div>
+  <div id="kill-feed"></div>
+
+  <!-- P2 HUD -->
+  <div id="p2-panel">
+    <div class="p2-title">JUGADOR 2</div>
+    <div class="bar-container">
+      <div class="bar-label">VIDA</div>
+      <div class="bar"><div class="bar-fill" id="p2-hp-fill" style="background:linear-gradient(90deg,#27ae60,#2ecc71);width:100%"></div></div>
+    </div>
+    <div class="bar-container">
+      <div class="bar-label" id="p2-ammo-label">MUNICIÓ</div>
+      <div class="bar"><div class="bar-fill" id="p2-ammo-fill" style="background:linear-gradient(90deg,#e67e22,#f39c12);width:100%"></div></div>
+    </div>
+    <div id="p2-ammo-txt">30/30</div>
+    <div id="p2-weapon-lbl"></div>
+    <div id="p2-bomb-txt"></div>
+    <div id="p2-potions"></div>
+  </div>
+
+  <div id="hud">
+    <div class="bar-container">
+      <div class="bar-label">VIDA</div>
+      <div class="bar"><div class="bar-fill" id="hp-fill" style="width:100%"></div></div>
+    </div>
+    <div class="bar-container">
+      <div class="bar-label">EXPERIÈNCIA</div>
+      <div class="bar"><div class="bar-fill" id="xp-fill" style="width:0%"></div></div>
+    </div>
+    <div class="bar-container">
+      <div class="bar-label" id="ammo-label">MUNICIÓ</div>
+      <div class="bar"><div class="bar-fill" id="ammo-fill" style="width:100%"></div></div>
+    </div>
+  </div>
+  <div id="weapon-badge"></div>
+  <div id="ammo-count">30/30</div>
+  <div id="bomb-count"></div>
+  <div id="potions-bar">
+    <div class="potion-slot" id="p1-slot" onclick="usePotion(0,1)"><span class="icon">❤️</span><span id="p1-txt">Poció Vida ×0</span></div>
+    <div class="potion-slot" id="p2-slot" onclick="usePotion(1,1)"><span class="icon">⚡</span><span id="p2-txt">Poció Velocitat ×0</span></div>
+    <div class="potion-slot" id="p3-slot" onclick="usePotion(2,1)"><span class="icon">💥</span><span id="p3-txt">Poció Dany ×0</span></div>
+  </div>
+  <div id="stats-display">
+    VELOCITAT: <span id="stat-speed">3</span> |
+    DANY: <span id="stat-dmg">25</span> |
+    VIDA MÀX: <span id="stat-maxhp">100</span>
+  </div>
+</div>
+
+<div id="levelup-screen">
+  <div id="levelup-title">PUJA DE NIVELL!</div>
+  <div id="levelup-sub">TRIA UNA MILLORA</div>
+  <div class="upgrade-cards" id="upgrade-cards"></div>
+</div>
+
+<div id="gameover-screen">
+  <div id="gameover-title">GAME OVER</div>
+  <div id="gameover-stats"></div>
+  <button id="restart-btn" onclick="showModeSelect()">TORNAR A JUGAR</button>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width  = window.innerWidth;
+canvas.height = window.innerHeight;
+window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+// ── WEAPONS ───────────────────────────────────────────────────────────────────
+const WEAPONS = {
+  shotgun: {
+    key:'shotgun', type:'gun', name:'ESCOPETA', icon:'🔫',
+    ammo:10, maxAmmo:10, damage:50, shootRate:30, reloadTime:480,
+    pellets:6, spread:0.35, range:300,
+  },
+  machinegun: {
+    key:'machinegun', type:'gun', name:'METRALLADORA', icon:'⚙️',
+    ammo:40, maxAmmo:40, damage:15, shootRate:5, reloadTime:300,
+    pellets:1, spread:0.06, range:200,
+  },
+  flamethrower: {
+    key:'flamethrower', type:'flame', name:'LLANÇA FLAMES', icon:'🔥',
+    ammo:900, maxAmmo:900, damage:10, shootRate:1, reloadTime:420,
+    range:250,
+  },
+};
+
+// ── GLOBALS ───────────────────────────────────────────────────────────────────
+let selectedMode     = 'single';
+let selectingPlayer  = 1;
+let selectedWeapons  = ['machinegun', 'machinegun'];
+let levelingPlayer   = null;
+let game             = null;
+
+// ── GAME STATE ────────────────────────────────────────────────────────────────
+function createGame() {
+  return {
+    running: false, mode: selectedMode,
+    score: 0, wave: 1,
+    waveTimer: 0, waveInterval: 600,
+    spawnTimer: 0, spawnRate: 120,
+    zombiesThisWave: 0, maxZombiesWave: 5,
+    player:  createPlayer(canvas.width/2 + (selectedMode==='multi'?40:-0), canvas.height/2, '#3498db', 1),
+    player2: selectedMode === 'multi'
+      ? createPlayer(canvas.width/2 - 40, canvas.height/2, '#2ecc71', 2)
+      : null,
+    zombies:[], bullets:[], particles:[], pickups:[], killFeed:[],
+    structures:[], placingStructure:null,
+    bombProjectiles:[], fireZones:[],
+    keys:{}, mouse:{x:0,y:0},
+    camX:0, camY:0, mapW:2000, mapH:2000,
+  };
+}
+
+function createPlayer(x, y, color, playerNum) {
+  const wKey = selectedWeapons[playerNum - 1] || 'machinegun';
+  const w = WEAPONS[wKey] || WEAPONS.machinegun;
+  return {
+    x, y, color, playerNum,
+    hp:100, maxHp:100, speed:3,
+    damage: w.damage, level:1, xp:0, xpToNext:100,
+    ammo:w.ammo, maxAmmo:w.maxAmmo,
+    reloading:false, reloadTimer:0, reloadTime:w.reloadTime,
+    shootCooldown:0, shootRate:w.shootRate,
+    weapon:w, bombs:0, potions:[0,0,0], effects:[],
+    angle:0, moveAngle:0, bobTimer:0, size:18,
+  };
+}
+
+// ── MODE / WEAPON SELECT ──────────────────────────────────────────────────────
+function showModeSelect() {
+  document.getElementById('gameover-screen').classList.remove('active');
+  document.getElementById('start-screen').style.display = 'flex';
+}
+function startSingle() { selectedMode = 'single'; showWeaponSelect(1); }
+function startMulti()  { selectedMode = 'multi';  showWeaponSelect(1); }
+
+function showWeaponSelect(playerNum) {
+  selectingPlayer = playerNum;
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('gameover-screen').classList.remove('active');
+  document.getElementById('weapon-player-label').textContent =
+    selectedMode === 'multi' ? `— JUGADOR ${playerNum} —` : '';
+
+  const defs = [
+    { key:'shotgun',     cls:'shotgun',     icon:'🔫', name:'ESCOPETA',
+      stats:[['BALES','10'],['DANY/TIR','50×6'],['ABAST','300px'],['RECÀRREGA','8s']] },
+    { key:'machinegun',  cls:'machinegun',  icon:'⚙️', name:'METRALLADORA',
+      stats:[['BALES','40'],['DANY/BALA','15'],['ABAST','200px'],['RECÀRREGA','5s']] },
+    { key:'flamethrower',cls:'flamethrower',icon:'🔥', name:'LLANÇA FLAMES',
+      stats:[['COMBUSTIBLE','15s'],['DANY','10/seg'],['ABAST','250px'],['RECÀRREGA','7s']] },
+  ];
+  const container = document.getElementById('weapon-cards');
+  container.innerHTML = '';
+  defs.forEach(d => {
+    const card = document.createElement('div');
+    card.className = `weapon-card ${d.cls}`;
+    card.innerHTML = `<div class="w-icon">${d.icon}</div><div class="w-name">${d.name}</div>
+      <div class="w-stats">${d.stats.map(s=>`<div class="w-stat"><span>${s[0]}</span><span>${s[1]}</span></div>`).join('')}</div>`;
+    card.onclick = () => {
+      selectedWeapons[playerNum - 1] = d.key;
+      document.getElementById('weapon-screen').style.display = 'none';
+      if (selectedMode === 'multi' && playerNum === 1) showWeaponSelect(2);
+      else startGame();
+    };
+    container.appendChild(card);
+  });
+  document.getElementById('weapon-screen').style.display = 'flex';
+}
+
+// ── CONTROLS ──────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (!game) return;
+  game.keys[e.key] = true;
+  // P1 actions
+  if (e.key==='r'||e.key==='R') reload(game.player);
+  if (e.key===' ')  throwBomb(game.player);
+  if (e.key==='1')  usePotion(0,1);
+  if (e.key==='2')  usePotion(1,1);
+  if (e.key==='3')  usePotion(2,1);
+  // P2 actions
+  if (game.player2) {
+    if (e.key==='p'||e.key==='P') reload(game.player2);
+    if (e.key==='Enter')          throwBomb(game.player2);
+    if (e.key==='7') usePotion(0,2);
+    if (e.key==='8') usePotion(1,2);
+    if (e.key==='9') usePotion(2,2);
+  }
+  e.preventDefault();
+});
+document.addEventListener('keyup', e => { if (game) game.keys[e.key] = false; });
+document.addEventListener('mousemove', e => { if (game) { game.mouse.x=e.clientX; game.mouse.y=e.clientY; } });
+document.addEventListener('mousedown', e => {
+  if (game && game.running && game.placingStructure) {
+    placeStructure(game.mouse.x + game.camX, game.mouse.y + game.camY);
+  }
+});
+
+// ── START GAME ────────────────────────────────────────────────────────────────
+function startGame() {
+  document.getElementById('weapon-screen').style.display = 'none';
+  document.getElementById('gameover-screen').classList.remove('active');
+  document.getElementById('levelup-screen').classList.remove('active');
+  document.getElementById('structure-screen').classList.remove('active');
+  game = createGame();
+  game.running = true;
+  document.getElementById('p2-panel').classList.toggle('visible', selectedMode==='multi');
+  spawnWave(); updateUI();
+  requestAnimationFrame(loop);
+}
+
+function loop() {
+  if (!game || !game.running) return;
+  update(); draw();
+  requestAnimationFrame(loop);
+}
+
+// ── UPDATE ────────────────────────────────────────────────────────────────────
+function update() {
+  const g = game;
+  const p  = g.player;
+  const p2 = g.player2;
+
+  // ── P1 movement (WASD; arrows too in single) ──
+  if (p.hp > 0) {
+    let dx=0, dy=0, both = g.mode==='single';
+    if (g.keys['w']||g.keys['W']||(both&&g.keys['ArrowUp']))    dy -= 1;
+    if (g.keys['s']||g.keys['S']||(both&&g.keys['ArrowDown']))  dy += 1;
+    if (g.keys['a']||g.keys['A']||(both&&g.keys['ArrowLeft']))  dx -= 1;
+    if (g.keys['d']||g.keys['D']||(both&&g.keys['ArrowRight'])) dx += 1;
+    if (dx||dy) {
+      const len = Math.sqrt(dx*dx+dy*dy), sp = getEffectiveSpeed(p);
+      p.x += (dx/len)*sp; p.y += (dy/len)*sp;
+      p.bobTimer += 0.15; p.moveAngle = Math.atan2(dy,dx);
+    }
+    p.x = Math.max(p.size, Math.min(g.mapW-p.size, p.x));
+    p.y = Math.max(p.size, Math.min(g.mapH-p.size, p.y));
+  }
+
+  // ── P2 movement (Arrow keys only) ──
+  if (p2 && p2.hp > 0) {
+    let dx=0, dy=0;
+    if (g.keys['ArrowUp'])    dy -= 1;
+    if (g.keys['ArrowDown'])  dy += 1;
+    if (g.keys['ArrowLeft'])  dx -= 1;
+    if (g.keys['ArrowRight']) dx += 1;
+    if (dx||dy) {
+      const len=Math.sqrt(dx*dx+dy*dy), sp=getEffectiveSpeed(p2);
+      p2.x += (dx/len)*sp; p2.y += (dy/len)*sp;
+      p2.bobTimer += 0.15; p2.moveAngle = Math.atan2(dy,dx);
+    }
+    p2.x = Math.max(p2.size, Math.min(g.mapW-p2.size, p2.x));
+    p2.y = Math.max(p2.size, Math.min(g.mapH-p2.size, p2.y));
+  }
+
+  // ── Camera ──
+  let camTargetX = p.x, camTargetY = p.y;
+  if (p2 && p2.hp > 0) { camTargetX=(p.x+p2.x)/2; camTargetY=(p.y+p2.y)/2; }
+  g.camX = Math.max(0, Math.min(g.mapW-canvas.width,  camTargetX - canvas.width/2));
+  g.camY = Math.max(0, Math.min(g.mapH-canvas.height, camTargetY - canvas.height/2));
+
+  // ── Auto-aim & auto-fire ──
+  autoAimFire(p, g);
+  if (p2) autoAimFire(p2, g);
+
+  // ── Effects ──
+  [p, ...(p2?[p2]:[])].forEach(pl => {
+    pl.effects = pl.effects.filter(e => { e.timer--; return e.timer>0; });
+  });
+
+  // ── Zombie spawn ──
+  g.spawnTimer++;
+  if (g.spawnTimer >= g.spawnRate && g.zombiesThisWave < g.maxZombiesWave) {
+    spawnZombie(); g.spawnTimer = 0;
+  }
+
+  // ── Zombie move & attack ──
+  g.zombies.forEach(z => {
+    let target = (p.hp>0) ? p : (p2&&p2.hp>0 ? p2 : p);
+    if (p2 && p2.hp>0 && p.hp>0) target = dist(z,p) < dist(z,p2) ? p : p2;
+    const ang = Math.atan2(target.y-z.y, target.x-z.x);
+    z.x += Math.cos(ang)*z.speed; z.y += Math.sin(ang)*z.speed;
+    z.angle = ang; z.bobTimer += 0.12;
+    if (p.hp>0  && dist(z,p)  < p.size+z.size)  damagePlayer(p,z.damage);
+    if (p2&&p2.hp>0 && dist(z,p2) < p2.size+z.size) damagePlayer(p2,z.damage);
+  });
+
+  // ── Bullets ──
+  g.bullets = g.bullets.filter(b => {
+    b.x+=b.vx; b.y+=b.vy; b.life--;
+    if (b.life<=0||b.x<0||b.x>g.mapW||b.y<0||b.y>g.mapH) return false;
+    for (let i=g.zombies.length-1;i>=0;i--) {
+      const z=g.zombies[i];
+      if (dist(b,z)<z.size) {
+        z.hp -= b.damage;
+        spawnParticles(z.x,z.y,'#e74c3c',6);
+        addKillMsg(`💀 -${Math.round(b.damage)}`);
+        if (z.hp<=0) { killZombie(z,b.owner); g.zombies.splice(i,1); }
+        return false;
+      }
+    }
+    return true;
+  });
+
+  // ── Particles ──
+  g.particles = g.particles.filter(pt => {
+    pt.x+=pt.vx; pt.y+=pt.vy; pt.vy+=0.1; pt.life--;
+    pt.alpha = pt.life/pt.maxLife; return pt.life>0;
+  });
+
+  // ── Pickups ──
+  g.pickups = g.pickups.filter(pk => {
+    pk.bobTime = (pk.bobTime||0)+0.05;
+    if (p.hp>0  && dist(pk,p)  < p.size+15)  { collectPickup(pk,p);  return false; }
+    if (p2&&p2.hp>0 && dist(pk,p2) < p2.size+15) { collectPickup(pk,p2); return false; }
+    return true;
+  });
+
+  // ── Wave ──
+  g.waveTimer++;
+  if (g.waveTimer>=g.waveInterval && g.zombiesThisWave>=g.maxZombiesWave && g.zombies.length===0) {
+    g.wave++; g.waveTimer=0;
+    g.spawnRate=Math.max(30,g.spawnRate-10);
+    spawnWave(); addKillMsg(`🌊 ONADA ${g.wave}!`);
+  }
+  g.killFeed = g.killFeed.filter(k => { k.age++; return k.age<180; });
+
+  // ── Bomb projectiles ──
+  g.bombProjectiles = g.bombProjectiles.filter(b => {
+    b.x+=b.vx; b.y+=b.vy; b.angle+=0.18; b.life--;
+    let explode = b.life<=0;
+    if (!explode) for (const z of g.zombies) if (dist(b,z)<z.size+10){explode=true;break;}
+    if (explode) {
+      spawnParticles(b.x,b.y,'#f39c12',30); spawnParticles(b.x,b.y,'#e74c3c',20); spawnParticles(b.x,b.y,'#fff',10);
+      g.fireZones.push({x:b.x,y:b.y,radius:80,timer:300});
+      for (let i=g.zombies.length-1;i>=0;i--) {
+        const z=g.zombies[i];
+        if (dist(b,z)<100) { z.hp-=80; if(z.hp<=0){killZombie(z,b.owner);g.zombies.splice(i,1);} }
+      }
+      addKillMsg('💥 BOOM!'); return false;
+    }
+    return true;
+  });
+
+  // ── Fire zones ──
+  g.fireZones = g.fireZones.filter(f => {
+    f.timer--;
+    if (f.timer%6===0) {
+      for (let i=g.zombies.length-1;i>=0;i--) {
+        const z=g.zombies[i];
+        if (dist(f,z)<f.radius+z.size) {
+          z.hp-=1; if(z.hp<=0){killZombie(z,null);g.zombies.splice(i,1);}
+        }
+      }
+    }
+    if (Math.random()>0.6) {
+      const ang=Math.random()*Math.PI*2, r=Math.random()*f.radius*0.9;
+      g.particles.push({x:f.x+Math.cos(ang)*r,y:f.y+Math.sin(ang)*r,vx:(Math.random()-0.5)*1.2,vy:-(1+Math.random()*2.5),color:['#f39c12','#e74c3c','#ff6b35','#ffeb3b'][Math.floor(Math.random()*4)],alpha:1,life:18+Math.random()*18,maxLife:36,size:4+Math.random()*7});
+    }
+    return f.timer>0;
+  });
+
+  // ── Structures ──
+  for (let si=g.structures.length-1;si>=0;si--) {
+    const s=g.structures[si]; s.timer++;
+    if (s.type==='turret') {
+      if (s.timer%90===0) {
+        let nearest=null,nd=Infinity;
+        g.zombies.forEach(z=>{const d=dist(s,z);if(d<nd&&d<200){nd=d;nearest=z;}});
+        if (nearest) {
+          const ang=Math.atan2(nearest.y-s.y,nearest.x-s.x); s.aimAngle=ang;
+          g.bullets.push({x:s.x,y:s.y,vx:Math.cos(ang)*12,vy:Math.sin(ang)*12,life:120,damage:20,owner:null,color:'#bdc3c7'});
+        }
+      }
+      g.zombies.forEach(z=>{if(dist(s,z)<18+z.size)s.hp-=z.damage*0.05;});
+      if (s.hp<=0){g.structures.splice(si,1);addKillMsg('💥 Toreta destruïda!');continue;}
+    } else if (s.type==='fence') {
+      if (s.timer%30===0) {
+        for (let i=g.zombies.length-1;i>=0;i--) {
+          const z=g.zombies[i];
+          if (dist(s,z)<40+z.size){z.hp-=35;spawnParticles(z.x,z.y,'#f1c40f',4);if(z.hp<=0){killZombie(z,null);g.zombies.splice(i,1);}}
+        }
+      }
+    } else if (s.type==='campfire') {
+      [p,...(p2?[p2]:[])].forEach(pl => {
+        if (pl.hp>0 && dist(s,pl)<80) {
+          if (s.timer%60===0){pl.hp=Math.min(pl.maxHp,pl.hp+10);addKillMsg('🔥 +10 Vida');}
+          const ef=pl.effects.find(e=>e._campfire);
+          if(ef) ef.timer=Math.max(ef.timer,90);
+          else pl.effects.push({type:'speed',timer:90,val:1.5,_campfire:true});
+        }
+      });
+      g.zombies.forEach(z=>{if(dist(s,z)<18+z.size)s.hp-=z.damage*0.05;});
+      if (s.hp<=0){g.structures.splice(si,1);addKillMsg('🔥 Foguera destruïda!');continue;}
+    }
+  }
+
+  document.getElementById('place-hint').style.display = g.placingStructure?'block':'none';
+  updateUI();
+
+  // ── Game over ──
+  const allDead = p.hp<=0 && (!p2||p2.hp<=0);
+  if (allDead) gameOver();
+}
+
+function autoAimFire(pl, g) {
+  if (pl.hp<=0) return;
+  const range = pl.weapon.range;
+  let nearest=null, nd=Infinity;
+  g.zombies.forEach(z=>{const d=dist(pl,z);if(d<nd&&d<range){nd=d;nearest=z;}});
+  if (nearest) pl.angle = Math.atan2(nearest.y-pl.y, nearest.x-pl.x);
+
+  if (pl.weapon.type==='gun') {
+    if (nearest && pl.shootCooldown<=0 && !pl.reloading && pl.ammo>0) shoot(pl);
+    if (pl.shootCooldown>0) pl.shootCooldown--;
+  }
+
+  if (pl.weapon.type==='flame' && nearest && !pl.reloading && pl.ammo>0) {
+    pl.ammo--;
+    if (pl.ammo%6===0) {
+      const dmg=getEffectiveDamage(pl)/10;
+      for (let i=g.zombies.length-1;i>=0;i--) {
+        const z=g.zombies[i];
+        if (dist(pl,z)<range) {
+          const toZ=Math.atan2(z.y-pl.y,z.x-pl.x);
+          const diff=Math.abs(((toZ-pl.angle+Math.PI*3)%(Math.PI*2))-Math.PI);
+          if (diff<Math.PI/3) {
+            z.hp-=dmg; spawnParticles(z.x,z.y,'#f39c12',2);
+            if(z.hp<=0){killZombie(z,pl);g.zombies.splice(i,1);}
+          }
+        }
+      }
+    }
+    for (let i=0;i<5;i++) {
+      const spread=(Math.random()-0.5)*0.7, ang=pl.angle+spread, spd=5+Math.random()*5;
+      g.particles.push({x:pl.x+Math.cos(pl.angle)*24,y:pl.y+Math.sin(pl.angle)*24,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,color:['#f39c12','#e74c3c','#ff6b35','#ffeb3b'][Math.floor(Math.random()*4)],alpha:1,life:10+Math.random()*10,maxLife:20,size:5+Math.random()*8});
+    }
+    if (pl.ammo<=0&&!pl.reloading) reload(pl);
+  }
+
+  if (pl.reloading){pl.reloadTimer--;if(pl.reloadTimer<=0){pl.ammo=pl.maxAmmo;pl.reloading=false;}}
+  if (pl.ammo<=0&&!pl.reloading) reload(pl);
+}
+
+// ── GAME FUNCTIONS ────────────────────────────────────────────────────────────
+function shoot(player) {
+  if (player.weapon.type==='flame'||player.ammo<=0||player.reloading) return;
+  const spd=14, pellets=player.weapon.pellets||1, spreadAmt=player.weapon.spread||0.04;
+  const eff=getEffectiveDamage(player);
+  for (let i=0;i<pellets;i++) {
+    const ang=player.angle+(Math.random()-0.5)*spreadAmt*2;
+    game.bullets.push({x:player.x+Math.cos(ang)*22,y:player.y+Math.sin(ang)*22,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,life:80,damage:eff,owner:player,color:player.color});
+  }
+  player.ammo--; player.shootCooldown=player.shootRate;
+  spawnParticles(player.x+Math.cos(player.angle)*22,player.y+Math.sin(player.angle)*22,'#f39c12',pellets>1?pellets:3);
+}
+
+function reload(player) {
+  if (player.reloading||player.ammo===player.maxAmmo) return;
+  player.reloading=true; player.reloadTimer=player.reloadTime;
+  addKillMsg(`🔄 J${player.playerNum} RECARREGANT...`);
+}
+
+function damagePlayer(player,dmg) {
+  if (player.hp<=0) return;
+  if (Math.random()>0.95) {
+    player.hp=Math.max(0,player.hp-dmg);
+    if (player.playerNum===1) {
+      const flash=document.getElementById('damage-flash');
+      flash.style.background='rgba(231,76,60,0.35)';
+      setTimeout(()=>flash.style.background='rgba(231,76,60,0)',150);
+    }
+  }
+}
+
+function killZombie(z,owner) {
+  const g=game, pts=10+g.wave*5; g.score+=pts;
+  if (owner){owner.xp+=30+g.wave*5;checkLevelUp(owner);}
+  if (Math.random()<0.05) g.pickups.push({x:z.x,y:z.y,type:'bomb',bobTime:0});
+  else if (Math.random()<0.25) {
+    const types=['hp','speed','damage','ammo'];
+    g.pickups.push({x:z.x,y:z.y,type:types[Math.floor(Math.random()*types.length)],bobTime:0});
+  }
+  spawnParticles(z.x,z.y,'#8e44ad',15);
+}
+
+function collectPickup(pk,player) {
+  if (pk.type==='bomb'){player.bombs++;addKillMsg(`💣 J${player.playerNum} +1 Bomba!`);}
+  else if (pk.type==='ammo'){
+    const bonus=player.weapon.type==='flame'?180:15;
+    player.ammo=Math.min(player.maxAmmo,player.ammo+bonus);
+    addKillMsg(player.weapon.type==='flame'?'📦 +3s Combustible':'📦 +15 Munició');
+  } else {
+    const idx=pk.type==='hp'?0:pk.type==='speed'?1:2;
+    player.potions[idx]++;
+    addKillMsg(`✨ J${player.playerNum} Poció de ${['Vida','Velocitat','Dany'][idx]}!`);
+  }
+}
+
+function usePotion(idx, playerNum) {
+  if (!game||!game.running) return;
+  const pl = playerNum===2 ? game.player2 : game.player;
+  if (!pl||pl.potions[idx]<=0) return;
+  pl.potions[idx]--;
+  if (idx===0){pl.hp=Math.min(pl.maxHp,pl.hp+50);addKillMsg(`❤️ J${pl.playerNum} +50 Vida!`);}
+  if (idx===1){pl.effects.push({type:'speed',timer:300,val:2});addKillMsg(`⚡ J${pl.playerNum} Velocitat x2!`);}
+  if (idx===2){pl.effects.push({type:'damage',timer:300,val:2});addKillMsg(`💥 J${pl.playerNum} Dany x2!`);}
+}
+
+function throwBomb(player) {
+  if (!game||!game.running||game.placingStructure) return;
+  if (player.bombs<=0) return;
+  let nearest=null,nd=Infinity;
+  game.zombies.forEach(z=>{const d=dist(player,z);if(d<nd){nd=d;nearest=z;}});
+  if (!nearest){addKillMsg('💣 No hi ha zombis!');return;}
+  player.bombs--;
+  const ang=Math.atan2(nearest.y-player.y,nearest.x-player.x);
+  game.bombProjectiles.push({x:player.x+Math.cos(ang)*22,y:player.y+Math.sin(ang)*22,vx:Math.cos(ang)*11,vy:Math.sin(ang)*11,angle:0,life:150,owner:player});
+  addKillMsg(`💣 J${player.playerNum} llença bomba!`);
+}
+
+function checkLevelUp(player) {
+  while (player.xp>=player.xpToNext) {
+    player.xp-=player.xpToNext; player.level++;
+    player.xpToNext=Math.floor(player.xpToNext*1.4);
+    levelingPlayer=player;
+    if (player.level%3===0) showStructureChoice();
+    else showLevelUp();
+  }
+}
+
+function spawnWave() { game.zombiesThisWave=0; game.maxZombiesWave=5+game.wave*3; game.waveTimer=0; }
+
+function spawnZombie() {
+  const g=game; g.zombiesThisWave++;
+  let x,y; const edge=Math.floor(Math.random()*4);
+  if(edge===0){x=Math.random()*g.mapW;y=0;}
+  else if(edge===1){x=Math.random()*g.mapW;y=g.mapH;}
+  else if(edge===2){x=0;y=Math.random()*g.mapH;}
+  else{x=g.mapW;y=Math.random()*g.mapH;}
+  const tier=Math.min(3,Math.floor(g.wave/3));
+  g.zombies.push({x,y,hp:40+tier*30+g.wave*5,maxHp:40+tier*30+g.wave*5,speed:0.8+tier*0.3+g.wave*0.05,damage:5+tier*3,size:14+tier*2,color:['#27ae60','#f39c12','#e74c3c','#8e44ad'][tier],angle:0,bobTimer:0});
+}
+
+function spawnParticles(x,y,color,n) {
+  for(let i=0;i<n;i++){const ang=Math.random()*Math.PI*2,spd=Math.random()*3+1;game.particles.push({x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd-2,color,alpha:1,life:30+Math.random()*20,maxLife:50,size:2+Math.random()*3});}
+}
+
+function addKillMsg(txt) {
+  game.killFeed.push({text:txt,age:0});
+  if(game.killFeed.length>6) game.killFeed.shift();
+  const feed=document.getElementById('kill-feed');
+  feed.innerHTML='';
+  game.killFeed.forEach(k=>{const el=document.createElement('div');el.className='kill-msg';el.textContent=k.text;feed.appendChild(el);});
+}
+
+function getEffectiveSpeed(pl){let sp=pl.speed;pl.effects.forEach(e=>{if(e.type==='speed')sp*=e.val;});return sp;}
+function getEffectiveDamage(pl){let d=pl.damage;pl.effects.forEach(e=>{if(e.type==='damage')d*=e.val;});return d;}
+function dist(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);}
+
+// ── DRAWING ───────────────────────────────────────────────────────────────────
+const TILE_SIZE=80;
+
+function draw() {
+  const g=game;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.save(); ctx.translate(-g.camX,-g.camY);
+  drawMap();
+  drawFireZones();
+  drawStructures();
+  g.pickups.forEach(pk=>drawPickup(pk));
+  g.particles.forEach(pt=>drawParticle(pt));
+  g.bullets.forEach(b=>drawBullet(b));
+  g.bombProjectiles.forEach(b=>drawBombProjectile(b));
+  g.zombies.forEach(z=>drawZombie(z));
+  if (g.player2 && g.player2.hp>0) drawPlayer(g.player2);
+  if (g.player.hp>0) drawPlayer(g.player);
+  ctx.restore();
+}
+
+function drawMap() {
+  const g=game;
+  ctx.fillStyle='#1a1a1a'; ctx.fillRect(0,0,g.mapW,g.mapH);
+  for(let tx=0;tx<g.mapW/TILE_SIZE;tx++)for(let ty=0;ty<g.mapH/TILE_SIZE;ty++){ctx.fillStyle=(tx+ty)%2===0?'#1e1e1e':'#1a1a1a';ctx.fillRect(tx*TILE_SIZE,ty*TILE_SIZE,TILE_SIZE,TILE_SIZE);}
+  ctx.strokeStyle='#222';ctx.lineWidth=1;
+  for(let tx=0;tx<=g.mapW/TILE_SIZE;tx++){ctx.beginPath();ctx.moveTo(tx*TILE_SIZE,0);ctx.lineTo(tx*TILE_SIZE,g.mapH);ctx.stroke();}
+  for(let ty=0;ty<=g.mapH/TILE_SIZE;ty++){ctx.beginPath();ctx.moveTo(0,ty*TILE_SIZE);ctx.lineTo(g.mapW,ty*TILE_SIZE);ctx.stroke();}
+  ctx.strokeStyle='#333';ctx.lineWidth=6;ctx.strokeRect(3,3,g.mapW-6,g.mapH-6);
+  drawObstacles();
+}
+
+const OBSTACLES=[{x:300,y:300,w:80,h:80},{x:600,y:150,w:60,h:120},{x:900,y:500,w:100,h:60},{x:1200,y:300,w:80,h:80},{x:1500,y:200,w:60,h:100},{x:400,y:700,w:120,h:60},{x:800,y:900,w:80,h:80},{x:1300,y:800,w:100,h:80},{x:700,y:1300,w:80,h:80},{x:1100,y:1200,w:120,h:60},{x:300,y:1500,w:80,h:80},{x:1600,y:1400,w:80,h:100},{x:1800,y:600,w:60,h:80},{x:1700,y:1700,w:100,h:60},{x:500,y:1800,w:80,h:80}];
+
+function drawObstacles() {
+  OBSTACLES.forEach(ob=>{
+    ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fillRect(ob.x+6,ob.y+8,ob.w,ob.h);
+    ctx.fillStyle='#2c3e50';ctx.fillRect(ob.x,ob.y-20,ob.w,20);
+    ctx.fillStyle='#243342';ctx.fillRect(ob.x,ob.y,ob.w,ob.h);
+    ctx.fillStyle='#1a2635';ctx.fillRect(ob.x+ob.w,ob.y-20,8,ob.h+20);
+    ctx.fillStyle='rgba(255,255,255,0.05)';ctx.fillRect(ob.x,ob.y,ob.w,3);
+  });
+}
+
+function drawPlayer(p) {
+  const bob=Math.sin(p.bobTimer)*2;
+  ctx.save();ctx.translate(p.x,p.y+bob);
+  ctx.fillStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.ellipse(0,p.size-2,p.size*0.8,6,0,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  // Body + head (move direction)
+  ctx.save();ctx.translate(p.x,p.y+bob);ctx.rotate(p.moveAngle+Math.PI/2);
+  ctx.fillStyle='#1a252f';ctx.fillRect(-6,2,5,12);ctx.fillRect(1,2,5,12);
+  ctx.fillStyle=p.color;ctx.beginPath();ctx.roundRect(-8,-10,16,18,3);ctx.fill();
+  ctx.fillStyle='#f5cba7';ctx.beginPath();ctx.arc(0,-16,8,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  // Weapon arm (aim direction)
+  ctx.save();ctx.translate(p.x,p.y+bob);ctx.rotate(p.angle+Math.PI/2);
+  const wk=p.weapon?p.weapon.key:'machinegun';
+  if(wk==='shotgun'){ctx.fillStyle='#555';ctx.fillRect(3,-14,20,7);ctx.fillStyle='#333';ctx.fillRect(21,-13,5,5);ctx.fillRect(21,-9,5,5);}
+  else if(wk==='flamethrower'){ctx.fillStyle='#7f0000';ctx.fillRect(4,-14,18,8);ctx.fillStyle='#c0392b';ctx.fillRect(20,-13,8,6);ctx.fillStyle='#f39c12';ctx.beginPath();ctx.arc(27,-10,4,0,Math.PI*2);ctx.fill();}
+  else{ctx.fillStyle='#444';ctx.fillRect(4,-12,14,5);ctx.fillStyle='#333';ctx.fillRect(16,-11,4,3);}
+  ctx.restore();
+  // HP bar
+  if(p.hp<p.maxHp){const bw=40,bh=4;ctx.fillStyle='#333';ctx.fillRect(p.x-bw/2,p.y-p.size-12,bw,bh);ctx.fillStyle=p.hp>50?'#2ecc71':p.hp>25?'#f39c12':'#e74c3c';ctx.fillRect(p.x-bw/2,p.y-p.size-12,bw*(p.hp/p.maxHp),bh);}
+  p.effects.forEach((ef,i)=>{ctx.fillStyle=ef.type==='speed'?'#3498db':'#e74c3c';ctx.beginPath();ctx.arc(p.x+i*12-6,p.y-p.size-20,4,0,Math.PI*2);ctx.fill();});
+}
+
+function drawZombie(z) {
+  const bob=Math.sin(z.bobTimer)*3;
+  ctx.save();ctx.translate(z.x,z.y+bob);ctx.rotate(z.angle+Math.PI/2);ctx.restore();
+  ctx.fillStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.ellipse(z.x,z.y+z.size-2,z.size*0.7,5,0,0,Math.PI*2);ctx.fill();
+  ctx.save();ctx.translate(z.x,z.y+bob);ctx.rotate(z.angle+Math.PI/2);
+  ctx.fillStyle=z.color;ctx.beginPath();ctx.roundRect(-z.size/2,-z.size/2,z.size,z.size*1.3,2);ctx.fill();
+  ctx.fillStyle='#7dcea0';ctx.beginPath();ctx.arc(0,-z.size/2-8,z.size*0.6,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#e74c3c';ctx.beginPath();ctx.arc(-4,-z.size/2-10,3,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(4,-z.size/2-10,3,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  const bw=z.size*2.5,bh=4;ctx.fillStyle='#333';ctx.fillRect(z.x-bw/2,z.y-z.size-16,bw,bh);ctx.fillStyle='#e74c3c';ctx.fillRect(z.x-bw/2,z.y-z.size-16,bw*(z.hp/z.maxHp),bh);
+}
+
+function drawBullet(b) {
+  ctx.save();ctx.translate(b.x,b.y);ctx.rotate(Math.atan2(b.vy,b.vx));
+  ctx.shadowColor=b.color;ctx.shadowBlur=10;
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(0,0,8,3,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=b.color;ctx.beginPath();ctx.ellipse(-2,0,5,2,0,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+
+function drawParticle(pt) {ctx.globalAlpha=pt.alpha;ctx.fillStyle=pt.color;ctx.beginPath();ctx.arc(pt.x,pt.y,pt.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
+
+function drawPickup(pk) {
+  const bob=Math.sin(pk.bobTime*3)*4;ctx.save();ctx.translate(pk.x,pk.y+bob);
+  const colors={hp:'#e74c3c',speed:'#3498db',damage:'#f39c12',ammo:'#95a5a6',bomb:'#2c3e50'};
+  ctx.shadowColor=colors[pk.type]||'#fff';ctx.shadowBlur=15;
+  ctx.fillStyle=colors[pk.type]||'#fff';ctx.beginPath();ctx.arc(0,0,10,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;ctx.fillStyle='#fff';ctx.font='14px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText({hp:'❤',speed:'⚡',damage:'💥',ammo:'📦',bomb:'💣'}[pk.type]||'?',0,0);
+  ctx.restore();
+}
+
+function drawBombProjectile(b) {
+  ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
+  ctx.fillStyle='#2c3e50';ctx.beginPath();ctx.arc(0,0,9,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#34495e';ctx.beginPath();ctx.arc(-2,-2,5,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#7f8c8d';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,-9);ctx.quadraticCurveTo(7,-15,4,-19);ctx.stroke();
+  ctx.shadowColor='#f39c12';ctx.shadowBlur=10;ctx.fillStyle='#f39c12';ctx.beginPath();ctx.arc(4,-19,4,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  ctx.restore();
+}
+
+function drawFireZones() {
+  game.fireZones.forEach(f=>{
+    const fade=f.timer/300; ctx.save(); ctx.translate(f.x,f.y);
+    const g=ctx.createRadialGradient(0,0,0,0,0,f.radius);
+    g.addColorStop(0,`rgba(231,76,60,${0.55*fade})`);g.addColorStop(0.5,`rgba(243,156,18,${0.35*fade})`);g.addColorStop(1,'rgba(243,156,18,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,f.radius,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  });
+}
+
+function drawStructures() {
+  const g=game;
+  if (g.placingStructure){ctx.globalAlpha=0.5;drawStructureAt(g.placingStructure,g.mouse.x+g.camX,g.mouse.y+g.camY,0);ctx.globalAlpha=1;}
+  g.structures.forEach(s=>{
+    drawStructureAt(s.type,s.x,s.y,s.aimAngle||0);
+    if(s.maxHp!==Infinity){const bw=36,bh=4;ctx.fillStyle='#222';ctx.fillRect(s.x-bw/2,s.y-30,bw,bh);ctx.fillStyle=s.hp/s.maxHp>0.5?'#2ecc71':s.hp/s.maxHp>0.25?'#f39c12':'#e74c3c';ctx.fillRect(s.x-bw/2,s.y-30,bw*(s.hp/s.maxHp),bh);}
+  });
+}
+
+function drawStructureAt(type,x,y,aimAngle) {
+  ctx.save();ctx.translate(x,y);
+  if(type==='turret'){
+    ctx.fillStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.ellipse(0,4,14,6,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#556';ctx.strokeStyle='#778';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,16,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.save();ctx.rotate(aimAngle);ctx.fillStyle='#889';ctx.fillRect(-2,-4,24,8);ctx.fillStyle='#667';ctx.fillRect(20,-5,7,10);ctx.restore();
+    ctx.fillStyle='#99a';ctx.beginPath();ctx.arc(0,0,7,0,Math.PI*2);ctx.fill();
+  } else if(type==='fence'){
+    ctx.strokeStyle='rgba(241,196,15,0.25)';ctx.lineWidth=10;ctx.beginPath();ctx.arc(0,0,40,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle='#f1c40f';ctx.lineWidth=2;ctx.setLineDash([6,4]);ctx.beginPath();ctx.arc(0,0,40,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+    ctx.shadowColor='#f1c40f';ctx.shadowBlur=12;ctx.fillStyle='#f1c40f';ctx.beginPath();ctx.arc(0,0,7,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  } else if(type==='campfire'){
+    ctx.fillStyle='rgba(230,126,34,0.08)';ctx.beginPath();ctx.arc(0,0,80,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(230,126,34,0.25)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,80,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#5d3317';ctx.fillRect(-13,2,26,7);ctx.save();ctx.rotate(Math.PI/3);ctx.fillRect(-13,2,26,7);ctx.restore();
+    ctx.fillStyle='#c0392b';ctx.beginPath();ctx.arc(0,-2,10,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#e67e22';ctx.beginPath();ctx.arc(0,-7,7,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#f39c12';ctx.beginPath();ctx.arc(0,-11,5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ffeb3b';ctx.beginPath();ctx.arc(0,-14,3,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ── UI ────────────────────────────────────────────────────────────────────────
+function updateUI() {
+  if (!game) return;
+  const p=game.player, p2=game.player2;
+  const isFlame=p.weapon.type==='flame';
+  document.getElementById('hp-fill').style.width=(p.hp/p.maxHp*100)+'%';
+  document.getElementById('xp-fill').style.width=(p.xp/p.xpToNext*100)+'%';
+  document.getElementById('ammo-fill').style.width=(p.ammo/p.maxAmmo*100)+'%';
+  document.getElementById('level-num').textContent=p.level;
+  document.getElementById('score-display').textContent=game.score;
+  document.getElementById('wave-display').textContent=`ONADA ${game.wave}`;
+  document.getElementById('ammo-label').textContent=isFlame?'COMBUSTIBLE':'MUNICIÓ';
+  document.getElementById('ammo-count').textContent=p.reloading?'RECARREGANT...':isFlame?`${Math.ceil(p.ammo/60)}s`:`${p.ammo}/${p.maxAmmo}`;
+  document.getElementById('weapon-badge').textContent=`${p.weapon.icon} ${p.weapon.name}`;
+  document.getElementById('bomb-count').textContent=p.bombs>0?`💣 ${p.bombs}`:'';
+  const names=['Poció Vida','Poció Velocitat','Poció Dany'];
+  [0,1,2].forEach(i=>{document.getElementById(`p${i+1}-txt`).textContent=`${names[i]} ×${p.potions[i]}`;document.getElementById(`p${i+1}-slot`).classList.toggle('empty',p.potions[i]===0);});
+  document.getElementById('stat-speed').textContent=p.speed.toFixed(1);
+  document.getElementById('stat-dmg').textContent=p.damage;
+  document.getElementById('stat-maxhp').textContent=p.maxHp;
+
+  if (p2) {
+    const f2=p2.weapon.type==='flame';
+    document.getElementById('p2-hp-fill').style.width=(p2.hp/p2.maxHp*100)+'%';
+    document.getElementById('p2-ammo-fill').style.width=(p2.ammo/p2.maxAmmo*100)+'%';
+    document.getElementById('p2-ammo-label').textContent=f2?'COMBUSTIBLE':'MUNICIÓ';
+    document.getElementById('p2-ammo-txt').textContent=p2.reloading?'RECARREGANT...':f2?`${Math.ceil(p2.ammo/60)}s`:`${p2.ammo}/${p2.maxAmmo}`;
+    document.getElementById('p2-weapon-lbl').textContent=`${p2.weapon.icon} ${p2.weapon.name}`;
+    document.getElementById('p2-bomb-txt').textContent=p2.bombs>0?`💣 ${p2.bombs}`:'';
+    document.getElementById('p2-potions').textContent=`❤️×${p2.potions[0]} ⚡×${p2.potions[1]} 💥×${p2.potions[2]}`;
+  }
+}
+
+// ── LEVEL UP ──────────────────────────────────────────────────────────────────
+function showLevelUp() {
+  game.running=false;
+  const pl=levelingPlayer||game.player;
+  const upgrades=[
+    {icon:'❤️',name:'VIDA MÀXIMA', desc:'+25 vida màxima i cura 25 HP',fn:p=>{p.maxHp+=25;p.hp=Math.min(p.maxHp,p.hp+25);}},
+    {icon:'⚡',name:'VELOCITAT',   desc:'+0.5 velocitat',              fn:p=>{p.speed+=0.5;}},
+    {icon:'🔫',name:'CADÈNCIA',    desc:'Dispara un 20% més ràpid',     fn:p=>{p.shootRate=Math.max(5,Math.floor(p.shootRate*0.8));}},
+    {icon:'💥',name:'DANY',        desc:'+10 dany per bala',            fn:p=>{p.damage+=10;}},
+    {icon:'📦',name:'MUNICIÓ',     desc:'+10 capacitat de munició',     fn:p=>{p.maxAmmo+=10;p.ammo=p.maxAmmo;}},
+    {icon:'🩸',name:'VAMPIR',      desc:'+3 Pocions de Vida',           fn:p=>{p.potions[0]+=3;}},
+  ];
+  document.getElementById('levelup-sub').textContent=`JUGADOR ${pl.playerNum} — TRIA UNA MILLORA`;
+  const chosen=upgrades.sort(()=>Math.random()-0.5).slice(0,3);
+  const container=document.getElementById('upgrade-cards'); container.innerHTML='';
+  chosen.forEach(u=>{
+    const card=document.createElement('div'); card.className='upgrade-card';
+    card.innerHTML=`<div class="icon">${u.icon}</div><div class="name">${u.name}</div><div class="desc">${u.desc}</div>`;
+    card.onclick=()=>{u.fn(pl);document.getElementById('levelup-screen').classList.remove('active');game.running=true;requestAnimationFrame(loop);};
+    container.appendChild(card);
+  });
+  document.getElementById('levelup-screen').classList.add('active');
+}
+
+// ── STRUCTURES ────────────────────────────────────────────────────────────────
+function showStructureChoice() {
+  game.running=false;
+  const screen=document.getElementById('structure-screen');
+  const container=document.getElementById('structure-cards'); container.innerHTML='';
+  const defs=[
+    {type:'turret',  icon:'🔧',name:'TORETA',        desc:'Dispara automàticament als zombis propers cada 1.5s.',stats:[['VIDA','20'],['DANY','20'],['ABAST','200px'],['CADÈNCIA','Lenta']]},
+    {type:'fence',   icon:'⚡',name:'BALLA ELÈCTRICA',desc:'Electrocuta els zombis que s\'acosten. Indestructible.',stats:[['VIDA','∞'],['DANY','35/xoc'],['ABAST','80px'],['DURADA','∞']]},
+    {type:'campfire',icon:'🏕️',name:'FOGUERA',        desc:'Cura 10 HP/seg i dóna velocitat mentre hi ets a prop.',stats:[['VIDA','25'],['CURA','10/seg'],['VELOCITAT','+50%'],['ABAST','80px']]},
+  ];
+  defs.forEach(d=>{
+    const card=document.createElement('div'); card.className='upgrade-card';
+    card.innerHTML=`<div class="icon">${d.icon}</div><div class="name">${d.name}</div><div class="desc">${d.desc}</div><div style="margin-top:10px">${d.stats.map(s=>`<div style="display:flex;justify-content:space-between;border-bottom:1px solid #222;padding:3px 0;font-size:10px;color:#666">${s[0]}<span style="color:#f39c12">${s[1]}</span></div>`).join('')}</div>`;
+    card.onclick=()=>{
+      screen.classList.remove('active');
+      game.placingStructure=d.type; game.running=true;
+      addKillMsg(`📍 Col·loca: ${d.name}`);
+      requestAnimationFrame(loop);
+    };
+    container.appendChild(card);
+  });
+  screen.classList.add('active');
+}
+
+function placeStructure(x,y) {
+  const type=game.placingStructure; game.placingStructure=null;
+  const base={turret:{hp:20,maxHp:20,aimAngle:0},fence:{hp:Infinity,maxHp:Infinity},campfire:{hp:25,maxHp:25}}[type];
+  game.structures.push({type,x,y,timer:0,...base});
+  addKillMsg(`✅ ${{turret:'Toreta',fence:'Balla elèctrica',campfire:'Foguera'}[type]} col·locada!`);
+}
+
+// ── GAME OVER ─────────────────────────────────────────────────────────────────
+function gameOver() {
+  game.running=false;
+  const p=game.player;
+  document.getElementById('gameover-stats').innerHTML=`
+    PUNTUACIÓ: ${game.score}<br>ONADA: ${game.wave}<br>NIVELL J1: ${p.level}${game.player2?`<br>NIVELL J2: ${game.player2.level}`:''}`;
+  document.getElementById('gameover-screen').classList.add('active');
+}
+</script>
+</body>
+</html>
