@@ -235,12 +235,43 @@
   .weapon-card.shotgun:hover      { border-color: #e74c3c; box-shadow: 0 0 28px rgba(231,76,60,0.35); }
   .weapon-card.machinegun:hover   { border-color: #3498db; box-shadow: 0 0 28px rgba(52,152,219,0.35); }
   .weapon-card.flamethrower:hover { border-color: #f39c12; box-shadow: 0 0 28px rgba(243,156,18,0.35); }
+  .weapon-card.shop-weapon:hover  { border-color: #b8860b; box-shadow: 0 0 28px rgba(184,134,11,0.35); }
+  #weapon-cards { flex-wrap: wrap; justify-content: center; max-width: 1100px; }
   .w-icon { font-size: 52px; margin-bottom: 14px; }
   .w-name { color: #fff; font-size: 14px; font-weight: bold; letter-spacing: 3px; margin-bottom: 14px; }
   .w-stats { font-size: 11px; }
   .w-stat { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #222; color: #666; }
   .w-stat:last-child { border-bottom: none; }
   .w-stat span:last-child { color: #f39c12; }
+
+  #boss-bar-wrap {
+    position:fixed; top:14px; left:50%; transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:4px; z-index:50;
+    pointer-events:none;
+  }
+  #boss-bar-label { color:#ff2200; font-size:14px; font-weight:bold; letter-spacing:4px; text-shadow:0 0 12px #ff2200; }
+  #boss-bar-track { width:320px; height:14px; background:#1a0000; border:2px solid #500; border-radius:3px; overflow:hidden; }
+  #boss-hp-fill { height:100%; width:100%; background:linear-gradient(90deg,#c62828,#ff1744); transition:width 0.15s; }
+  #boss-hp-label { color:#ff6666; font-size:11px; letter-spacing:2px; }
+
+  #creator-code-wrap {
+    position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 10px; flex-direction: column;
+  }
+  #creator-code-wrap > div:first-child { display: flex; gap: 10px; }
+  #creator-code-input {
+    background: #0d0d0d; border: 1px solid #333; color: #ffd700;
+    font-family: 'Courier New', monospace; font-size: 13px; letter-spacing: 3px;
+    padding: 8px 14px; border-radius: 3px; width: 210px; text-align: center; outline: none;
+  }
+  #creator-code-input:focus { border-color: #b8860b; }
+  #creator-code-btn {
+    background: #1a1a1a; border: 1px solid #444; color: #aaa;
+    font-family: 'Courier New', monospace; font-size: 12px; letter-spacing: 2px;
+    padding: 8px 16px; border-radius: 3px; cursor: pointer; transition: all 0.2s;
+  }
+  #creator-code-btn:hover { border-color: #b8860b; color: #ffd700; }
+  #creator-code-msg { font-size: 12px; letter-spacing: 2px; text-align: center; min-height: 18px; transition: color 0.3s; }
 
   #damage-flash {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -276,6 +307,13 @@
     <button class="mode-btn multi" onclick="startMulti()">2 JUGADORS</button>
     <button class="mode-btn arena" onclick="startArena()">⚔️ ARENA</button>
   </div>
+  <div id="creator-code-wrap">
+    <div style="display:flex;gap:10px;">
+      <input id="creator-code-input" type="text" placeholder="CODI DE CREADOR" autocomplete="off" spellcheck="false" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')redeemCode()">
+      <button id="creator-code-btn" onclick="redeemCode()">ACTIVAR</button>
+    </div>
+    <div id="creator-code-msg"></div>
+  </div>
 </div>
 
 <div id="weapon-screen">
@@ -294,6 +332,11 @@
 </div>
 
 <div id="arena-timer">⏱ 0:00</div>
+<div id="boss-bar-wrap" style="display:none">
+  <div id="boss-bar-label">💀 BOSS</div>
+  <div id="boss-bar-track"><div id="boss-hp-fill"></div></div>
+  <div id="boss-hp-label"></div>
+</div>
 <canvas id="gameCanvas"></canvas>
 <div id="damage-flash"></div>
 
@@ -439,6 +482,21 @@ const WEAPONS = {
   },
 };
 
+// ── SKINS & ARMOR ─────────────────────────────────────────────────────────────
+const SKINS = [
+  { key:'default', name:'DEFECTE',      color:'#3498db', price:0,  desc:'El clàssic explorador' },
+  { key:'red',     name:'GUERRER ROIG', color:'#e74c3c', price:25, desc:'Agressiu i directe' },
+  { key:'green',   name:'CAÇADOR',      color:'#27ae60', price:25, desc:'Expert en supervivència' },
+  { key:'purple',  name:'ASSASSÍ',      color:'#8e44ad', price:40, desc:'Silenciós i letal' },
+  { key:'cyan',    name:'SOLDAT',       color:'#00bcd4', price:35, desc:'Entrenament d\'elit' },
+  { key:'gold',    name:'LLEGENDA',     color:'#c9a227', price:80, desc:'Reservat per als millors' },
+];
+const ARMOR_UPGRADES = [
+  { level:1, price:40,  label:'ARMADURA I',  desc:'-15% de dany rebut',  icon:'🛡' },
+  { level:2, price:90,  label:'ARMADURA II', desc:'-30% de dany rebut',  icon:'🛡🛡' },
+  { level:3, price:180, label:'ARMADURA III',desc:'-50% de dany rebut',  icon:'🛡🛡🛡' },
+];
+
 // ── ZOMBIE TYPES ─────────────────────────────────────────────────────────────
 const ZOMBIE_TYPES = [
   { key:'normal',   minWave:1, hpMult:1,   spdMult:1,    dmgAdd:0,  sizeMult:1,   armor:0,   weight:10, color:null },
@@ -450,6 +508,39 @@ const ZOMBIE_TYPES = [
   { key:'bomber',   minWave:7, hpMult:2,   spdMult:0.55, dmgAdd:2,  sizeMult:1.3, armor:0,   weight:3,  color:'#6a1b9a' },
 ];
 
+// ── CREATOR CODES ─────────────────────────────────────────────────────────────
+const CREATOR_CODES = { '1414BRU': 100000 };
+
+function redeemCode() {
+  const input = document.getElementById('creator-code-input');
+  const msg   = document.getElementById('creator-code-msg');
+  const code  = input.value.trim().toUpperCase();
+  if (!code) return;
+
+  const usedCodes = JSON.parse(localStorage.getItem('dz_used_codes')||'[]');
+  if (usedCodes.includes(code)) {
+    msg.style.color = '#e74c3c';
+    msg.textContent = '✗ CODI JA USAT';
+    return;
+  }
+  const reward = CREATOR_CODES[code];
+  if (!reward) {
+    msg.style.color = '#e74c3c';
+    msg.textContent = '✗ CODI INCORRECTE';
+    return;
+  }
+  // Aplica la recompensa
+  savedData.coins += reward;
+  persistSavedData();
+  usedCodes.push(code);
+  localStorage.setItem('dz_used_codes', JSON.stringify(usedCodes));
+  document.getElementById('coin-display').textContent = `🪙 ${savedData.coins}`;
+  input.value = '';
+  msg.style.color = '#2ecc71';
+  msg.textContent = `✓ +${reward.toLocaleString()} MONEDES!`;
+  setTimeout(() => { msg.textContent = ''; }, 4000);
+}
+
 // ── GLOBALS ───────────────────────────────────────────────────────────────────
 let selectedMode     = 'single';
 let selectingPlayer  = 1;
@@ -459,9 +550,15 @@ let game             = null;
 function loadSavedData() {
   try {
     const raw = localStorage.getItem('deadzone_save');
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const d = JSON.parse(raw);
+      d.ownedSkins  = d.ownedSkins  || ['default'];
+      d.selectedSkin= d.selectedSkin|| 'default';
+      d.armorLevel  = d.armorLevel  || 0;
+      return d;
+    }
   } catch(e) {}
-  return { coins: 0, shopWeapons: [], savedBombs: {mine:0, areaBlast:0, missile:0} };
+  return { coins:0, shopWeapons:[], savedBombs:{mine:0,areaBlast:0,missile:0}, ownedSkins:['default'], selectedSkin:'default', armorLevel:0 };
 }
 function persistSavedData() {
   try { localStorage.setItem('deadzone_save', JSON.stringify(savedData)); } catch(e) {}
@@ -497,8 +594,11 @@ function createGame() {
 function createPlayer(x, y, color, playerNum) {
   const wKey = selectedWeapons[playerNum - 1] || 'machinegun';
   const w = WEAPONS[wKey] || WEAPONS.machinegun;
+  // P1 uses selected skin, P2 uses default color
+  const skinColor = playerNum===1 ? (SKINS.find(s=>s.key===savedData.selectedSkin)||SKINS[0]).color : color;
+  const armorReduction = [0,0.15,0.30,0.50][savedData.armorLevel||0];
   return {
-    x, y, color, playerNum,
+    x, y, color: skinColor, playerNum,
     hp:100, maxHp:100, speed:3,
     damage: w.damage, level:1, xp:0, xpToNext:100,
     ammo:w.ammo, maxAmmo:w.maxAmmo,
@@ -507,9 +607,11 @@ function createPlayer(x, y, color, playerNum) {
     weapon:w, bombs:0, potions:[0,0,0], effects:[],
     angle:0, moveAngle:0, bobTimer:0, size:18,
     coins:savedData.coins,
-    ownedWeapons:[{key:wKey, ammo:w.ammo}, ...savedData.shopWeapons.map(sk=>({key:sk, ammo:WEAPONS[sk].ammo}))],
+    ownedWeapons:[{key:wKey, ammo:w.ammo}, ...savedData.shopWeapons.filter(sk=>sk!==wKey).map(sk=>({key:sk, ammo:WEAPONS[sk].ammo}))],
     currentWeaponIdx:0,
     mines:savedData.savedBombs.mine||0, areaBlasts:savedData.savedBombs.areaBlast||0, missiles:savedData.savedBombs.missile||0,
+    armorLevel: savedData.armorLevel||0, armorReduction,
+    skinKey: playerNum===1 ? (savedData.selectedSkin||'default') : 'default',
   };
 }
 
@@ -544,6 +646,18 @@ function showWeaponSelect(playerNum) {
     { key:'flamethrower',cls:'flamethrower',icon:'🔥', name:'LLANÇA FLAMES',
       stats:[['COMBUSTIBLE','15s'],['DANY','10/seg'],['ABAST','250px'],['RECÀRREGA','7s']] },
   ];
+
+  // Afegeix armes comprades a la botiga
+  savedData.shopWeapons.forEach(sk => {
+    const w = WEAPONS[sk]; if(!w) return;
+    const reloadSec = (w.reloadTime/60).toFixed(1)+'s';
+    let stats;
+    if(w.type==='rocket') stats=[['MUNICIÓ',w.maxAmmo],['DANY EXPLOSIÓ',w.damage],['ABAST',w.range+'px'],['RECÀRREGA',reloadSec]];
+    else if(w.type==='flame') stats=[['COMBUSTIBLE',Math.ceil(w.maxAmmo/60)+'s'],['DANY',w.damage+'/seg'],['ABAST',w.range+'px'],['RECÀRREGA',reloadSec]];
+    else stats=[['BALES',w.maxAmmo],['DANY/BALA',w.pellets>1?w.damage+'×'+w.pellets:w.damage],['ABAST',w.range+'px'],['RECÀRREGA',reloadSec]];
+    defs.push({ key:sk, cls:'shop-weapon', icon:w.icon, name:w.name, stats });
+  });
+
   const container = document.getElementById('weapon-cards');
   container.innerHTML = '';
   defs.forEach(d => {
@@ -702,8 +816,41 @@ function update() {
   g.zombies.forEach(z => {
     let target = (p.hp>0) ? p : (p2&&p2.hp>0 ? p2 : p);
     if (p2 && p2.hp>0 && p.hp>0) target = dist(z,p) < dist(z,p2) ? p : p2;
+
+    // ── Boss AI ──
+    if(z.isBoss){
+      // Enrage below 40% HP
+      if(!z.enraged && z.hp < z.maxHp*0.4){ z.enraged=true; z.speed*=1.6; addKillMsg('💀 BOSS ENFURISMAT!'); g.shake=14; }
+      // Charge attack
+      z.chargeTimer--;
+      if(z.chargeTimer<=0 && !z.chargeActive){
+        z.chargeActive=true; z.chargeLife=55;
+        z.chargeDx=Math.cos(Math.atan2(target.y-z.y,target.x-z.x))*8;
+        z.chargeDy=Math.sin(Math.atan2(target.y-z.y,target.x-z.x))*8;
+        spawnParticles(z.x,z.y,'#ff1100',12); addKillMsg('💥 Boss carrega!');
+        z.chargeTimer = z.enraged ? 220 : 340;
+      }
+      if(z.chargeActive){ z.x+=z.chargeDx; z.y+=z.chargeDy; z.chargeLife--; if(z.chargeLife<=0) z.chargeActive=false; }
+      // Slam attack
+      z.slamTimer--;
+      if(z.slamTimer<=0){
+        z.slamTimer = z.enraged ? 300 : 480;
+        spawnParticles(z.x,z.y,'#ff6600',25); spawnParticles(z.x,z.y,'#ffcc00',15);
+        g.shake=Math.max(g.shake,12);
+        const slamR=130;
+        [p,...(p2?[p2]:[])].forEach(pl=>{ if(pl.hp>0 && dist(z,pl)<slamR) damagePlayer(pl,35); });
+        for(let i=g.zombies.length-1;i>=0;i--){ const oz=g.zombies[i]; if(oz!==z && dist(z,oz)<slamR){ oz.hp-=60; if(oz.hp<=0){killZombie(oz,g.player);g.zombies.splice(i,1);} } }
+        addKillMsg('🌋 Boss copeja el terra!');
+      }
+      // Update boss health bar
+      const bossBar=document.getElementById('boss-hp-fill');
+      if(bossBar) bossBar.style.width=(z.hp/z.maxHp*100)+'%';
+      const bossLabel=document.getElementById('boss-hp-label');
+      if(bossLabel) bossLabel.textContent=`BOSS  ${Math.ceil(z.hp)} / ${z.maxHp}`;
+    }
+
     const ang = Math.atan2(target.y-z.y, target.x-z.x);
-    z.x += Math.cos(ang)*z.speed; z.y += Math.sin(ang)*z.speed;
+    if(!z.chargeActive){ z.x += Math.cos(ang)*z.speed; z.y += Math.sin(ang)*z.speed; }
     z.angle = ang; z.bobTimer += 0.12;
     if (z.flashTimer>0) z.flashTimer--;
     // Burn DoT (mark only — removal handled below)
@@ -965,7 +1112,7 @@ function autoAimFire(pl, g) {
     // Manual aim with mouse
     pl.angle = Math.atan2((g.mouse.y + g.camY) - pl.y, (g.mouse.x + g.camX) - pl.x);
     const firing = g.keys['mouse0'];
-    if (pl.weapon.type==='gun') {
+    if (pl.weapon.type!=='flame') {
       if (firing && pl.shootCooldown<=0 && !pl.reloading && pl.ammo>0) shoot(pl);
       if (pl.shootCooldown>0) pl.shootCooldown--;
     }
@@ -989,7 +1136,7 @@ function autoAimFire(pl, g) {
     let nearest=null, nd=Infinity;
     g.zombies.forEach(z=>{const d=dist(pl,z);if(d<nd&&d<range){nd=d;nearest=z;}});
     if (nearest) pl.angle = Math.atan2(nearest.y-pl.y, nearest.x-pl.x);
-    if (pl.weapon.type==='gun') {
+    if (pl.weapon.type!=='flame') {
       if (nearest && pl.shootCooldown<=0 && !pl.reloading && pl.ammo>0) shoot(pl);
       if (pl.shootCooldown>0) pl.shootCooldown--;
     }
@@ -1064,7 +1211,8 @@ function reload(player) {
 function damagePlayer(player,dmg) {
   if (player.hp<=0) return;
   if (Math.random()>0.95) {
-    player.hp=Math.max(0,player.hp-dmg);
+    const reduced = dmg * (1-(player.armorReduction||0));
+    player.hp=Math.max(0,player.hp-reduced);
     if (player.playerNum===1) {
       const flash=document.getElementById('damage-flash');
       flash.style.background='rgba(231,76,60,0.35)';
@@ -1127,10 +1275,21 @@ function explodeRocket(b,g) {
 }
 
 function killZombie(z,owner) {
-  const g=game, pts=10+g.wave*5; g.score+=pts;
-  if (owner){owner.xp+=30+g.wave*5;checkLevelUp(owner);}
-  const coinAmt={normal:1,runner:2,tank:5,exploder:2,healer:3,armored:4,bomber:3}[z.ztype||'normal']||1;
-  for(let c=0;c<coinAmt;c++) g.pickups.push({x:z.x+(Math.random()-0.5)*28,y:z.y+(Math.random()-0.5)*28,type:'coin',bobTime:0,coinVal:1});
+  const g=game, pts=z.isBoss?(500+g.wave*20):(10+g.wave*5); g.score+=pts;
+  if (owner){owner.xp+=(z.isBoss?500:30)+g.wave*5;checkLevelUp(owner);}
+  const coinAmt=z.isBoss ? 35+g.wave*3 : ({normal:1,runner:2,tank:5,exploder:2,healer:3,armored:4,bomber:3}[z.ztype||'normal']||1);
+  for(let c=0;c<coinAmt;c++) g.pickups.push({x:z.x+(Math.random()-0.5)*40,y:z.y+(Math.random()-0.5)*40,type:'coin',bobTime:0,coinVal:1});
+  // Boss death: mega explosion
+  if(z.isBoss){
+    for(let i=0;i<5;i++) setTimeout(()=>{
+      spawnParticles(z.x+(Math.random()-0.5)*120,z.y+(Math.random()-0.5)*120,'#ff4500',20);
+      spawnParticles(z.x+(Math.random()-0.5)*80,z.y+(Math.random()-0.5)*80,'#ffd700',12);
+    }, i*120);
+    g.shake=Math.max(g.shake,25);
+    document.getElementById('boss-bar-wrap').style.display='none';
+    addKillMsg('💀 BOSS ELIMINAT! +'+coinAmt+' MONEDES!');
+    return;
+  }
   // Exploder: explota en morir
   if (z.ztype==='exploder') {
     spawnParticles(z.x,z.y,'#ff5722',30); spawnParticles(z.x,z.y,'#f39c12',20);
@@ -1254,6 +1413,45 @@ function refreshShopUI() {
     bRow.appendChild(card);
   });
   container.appendChild(bRow);
+
+  // ── Skins section ──
+  const skTitle=document.createElement('div');
+  skTitle.style.cssText='width:100%;text-align:left;color:#888;font-size:11px;letter-spacing:3px;margin-bottom:10px;border-top:1px solid #222;padding-top:14px;';
+  skTitle.textContent='— SKINS —';
+  container.appendChild(skTitle);
+  const skRow=document.createElement('div');
+  skRow.style.cssText='display:flex;gap:14px;flex-wrap:wrap;justify-content:center;width:100%;margin-bottom:18px;';
+  const ownedSkins=savedData.ownedSkins||['default'];
+  const selectedSkin=savedData.selectedSkin||'default';
+  SKINS.forEach(sk=>{
+    const owned=ownedSkins.includes(sk.key);
+    const equipped=selectedSkin===sk.key;
+    const canAfford=coins>=sk.price;
+    const card=document.createElement('div');
+    card.className='shop-card'+(equipped?' owned':'');
+    card.innerHTML=`<div class="shop-icon" style="font-size:28px;width:44px;height:44px;border-radius:50%;background:${sk.color};margin:0 auto 8px;border:3px solid ${equipped?'#2ecc71':'#333'}"></div><div class="shop-name">${sk.name}</div><div class="shop-desc">${sk.desc}</div><div class="shop-price">${sk.price===0?'GRATIS':'🪙 '+sk.price}</div><button class="shop-buy-btn${equipped?' owned-lbl':''}" ${(owned&&equipped)||(!owned&&!canAfford)?'disabled':''} onclick="${owned?`equipSkin('${sk.key}')`:`buySkin('${sk.key}')`}">${equipped?'EQUIPAT':(owned?'EQUIPAR':(canAfford?'COMPRAR':'FALTA MONEDES'))}</button>`;
+    skRow.appendChild(card);
+  });
+  container.appendChild(skRow);
+
+  // ── Armor upgrades section ──
+  const arTitle=document.createElement('div');
+  arTitle.style.cssText='width:100%;text-align:left;color:#888;font-size:11px;letter-spacing:3px;margin-bottom:10px;border-top:1px solid #222;padding-top:14px;';
+  arTitle.textContent='— ARMADURA (permanent) —';
+  container.appendChild(arTitle);
+  const arRow=document.createElement('div');
+  arRow.style.cssText='display:flex;gap:14px;flex-wrap:wrap;justify-content:center;width:100%;';
+  const curArmor=savedData.armorLevel||0;
+  ARMOR_UPGRADES.forEach(ar=>{
+    const owned=curArmor>=ar.level;
+    const isNext=curArmor===ar.level-1;
+    const canAfford=coins>=ar.price;
+    const card=document.createElement('div');
+    card.className='shop-card'+(owned?' owned':'');
+    card.innerHTML=`<div class="shop-icon">${ar.icon}</div><div class="shop-name">${ar.label}</div><div class="shop-desc">${ar.desc}<br>${owned?'<span style="color:#2ecc71">✓ ACTIVA</span>':''}</div><div class="shop-price">🪙 ${ar.price}</div><button class="shop-buy-btn${owned?' owned-lbl':''}" ${owned||!isNext||!canAfford?'disabled':''} onclick="buyArmor(${ar.level})">${owned?'COMPRAT':(isNext&&canAfford?'COMPRAR':'FALTA MONEDES')}</button>`;
+    arRow.appendChild(card);
+  });
+  container.appendChild(arRow);
 }
 
 function buyBomb(key) {
@@ -1276,16 +1474,53 @@ function buyBomb(key) {
   refreshShopUI();
 }
 
+function buySkin(key) {
+  const sk=SKINS.find(s=>s.key===key); if(!sk) return;
+  const coins=game&&game.player?game.player.coins:savedData.coins;
+  if(coins<sk.price) return;
+  if(game&&game.player) game.player.coins-=sk.price; else savedData.coins-=sk.price;
+  savedData.coins=(game&&game.player?game.player.coins:savedData.coins);
+  savedData.ownedSkins=savedData.ownedSkins||['default'];
+  if(!savedData.ownedSkins.includes(key)) savedData.ownedSkins.push(key);
+  savedData.selectedSkin=key;
+  if(game&&game.player){ game.player.color=sk.color; game.player.skinKey=key; }
+  document.getElementById('coin-display').textContent=`🪙 ${savedData.coins}`;
+  persistSavedData(); refreshShopUI();
+}
+function equipSkin(key) {
+  const sk=SKINS.find(s=>s.key===key); if(!sk) return;
+  savedData.selectedSkin=key;
+  if(game&&game.player){ game.player.color=sk.color; game.player.skinKey=key; }
+  persistSavedData(); refreshShopUI();
+}
+function buyArmor(level) {
+  const ar=ARMOR_UPGRADES.find(a=>a.level===level); if(!ar) return;
+  if((savedData.armorLevel||0)>=level) return;
+  const coins=game&&game.player?game.player.coins:savedData.coins;
+  if(coins<ar.price) return;
+  if(game&&game.player){ game.player.coins-=ar.price; game.player.armorLevel=level; game.player.armorReduction=[0,0.15,0.30,0.50][level]; }
+  savedData.coins=(game&&game.player?game.player.coins:savedData.coins-ar.price);
+  savedData.armorLevel=level;
+  document.getElementById('coin-display').textContent=`🪙 ${savedData.coins}`;
+  if(game&&game.player) addKillMsg(`🛡 Armadura Nv.${level} equipada!`);
+  persistSavedData(); refreshShopUI();
+}
+
 function buyWeapon(key) {
   const w=WEAPONS[key]; if(!w) return;
   if(game&&game.player){
     const player=game.player;
     if(player.coins<w.price||player.ownedWeapons.some(s=>s.key===key)) return;
     player.coins-=w.price;
+    player.ownedWeapons[player.currentWeaponIdx].ammo=player.ammo;
     player.ownedWeapons.push({key, ammo:w.ammo});
+    player.currentWeaponIdx=player.ownedWeapons.length-1;
+    player.weapon=w; player.ammo=w.ammo; player.maxAmmo=w.maxAmmo;
+    player.damage=w.damage; player.shootRate=w.shootRate; player.reloadTime=w.reloadTime;
+    player.reloading=false; player.shootCooldown=0;
     savedData.coins=player.coins;
     savedData.shopWeapons=player.ownedWeapons.slice(1).map(s=>s.key);
-    addKillMsg(`🛒 ${w.icon} ${w.name} comprat!`);
+    addKillMsg(`🛒 ${w.icon} ${w.name} equipat!`);
     refreshInventoryBar(player);
   } else {
     if(savedData.coins<w.price||savedData.shopWeapons.includes(key)) return;
@@ -1344,7 +1579,34 @@ function checkLevelUp(player) {
   }
 }
 
-function spawnWave() { game.zombiesThisWave=0; game.maxZombiesWave=5+game.wave*3; game.waveTimer=0; }
+function spawnWave() {
+  game.zombiesThisWave=0; game.maxZombiesWave=5+game.wave*3; game.waveTimer=0;
+  if(game.wave>0 && game.wave%5===0) setTimeout(spawnBoss, 1500);
+}
+
+function spawnBoss() {
+  const g=game; if(!g||!g.running) return;
+  const hp = 500 + g.wave*60;
+  // Spawn from edge, far from player
+  const edges=[
+    {x:g.mapW/2, y:60}, {x:g.mapW/2, y:g.mapH-60},
+    {x:60, y:g.mapH/2}, {x:g.mapW-60, y:g.mapH/2}
+  ];
+  const p=g.player;
+  const spawn=edges.reduce((best,e)=>dist(e,p)>dist(best,p)?e:best, edges[0]);
+  g.zombies.push({
+    x:spawn.x, y:spawn.y, angle:0, bobTimer:0, healTimer:0,
+    ztype:'boss', isBoss:true, armor:0,
+    hp, maxHp:hp,
+    speed:1.1, damage:28, size:52, color:'#8b0000',
+    chargeTimer:300, chargeActive:false, chargeDx:0, chargeDy:0, chargeLife:0,
+    slamTimer:500, slamActive:false,
+    enraged:false,
+  });
+  addKillMsg('💀 BOSS HA APAREGUT!');
+  g.shake=Math.max(g.shake,18);
+  document.getElementById('boss-bar-wrap').style.display='block';
+}
 
 function spawnZombie() {
   const g=game; g.zombiesThisWave++;
@@ -1710,6 +1972,20 @@ function drawPlayer(p) {
   // Nose
   ctx.fillStyle='#c9905a'; ctx.fillRect(-1,-16,2,2);
 
+  // Armor plates (shown when armorLevel > 0)
+  if(p.armorLevel>0){
+    const ac = p.armorLevel>=3 ? '#ffd700' : (p.armorLevel>=2 ? '#90a4ae' : '#546e7a');
+    ctx.fillStyle=ac; ctx.globalAlpha=0.82;
+    ctx.fillRect(-10,-10,5,12);   // left chest plate
+    ctx.fillRect(5,-10,5,12);     // right chest plate
+    if(p.armorLevel>=2){ ctx.fillRect(-9,-26,5,10); ctx.fillRect(4,-26,5,10); } // shoulder pads
+    if(p.armorLevel>=3){
+      ctx.strokeStyle='#ffd700'; ctx.lineWidth=1; ctx.globalAlpha=0.6;
+      ctx.strokeRect(-10,-10,5,12); ctx.strokeRect(5,-10,5,12);
+    }
+    ctx.globalAlpha=1;
+  }
+
   ctx.restore();
 
   // ── WEAPON ARM layer (aim direction) ──
@@ -1755,6 +2031,58 @@ function drawPlayer(p) {
 }
 
 function drawZombie(z) {
+  // ── BOSS drawing ──
+  if(z.isBoss){
+    const bob=Math.sin(z.bobTimer*0.7)*5, now=Date.now(), hpPct=z.hp/z.maxHp;
+    const s=z.size, enr=z.enraged;
+    // Outer glow
+    ctx.save();
+    ctx.shadowColor=enr?'#ff2200':'#8b0000'; ctx.shadowBlur=28+12*Math.abs(Math.sin(now/200));
+    ctx.globalAlpha=0.22+0.12*Math.abs(Math.sin(now/200));
+    ctx.fillStyle=enr?'#ff3300':'#8b0000';
+    ctx.beginPath();ctx.arc(z.x,z.y+bob,s*1.6,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0; ctx.globalAlpha=1; ctx.restore();
+    // Charge flash
+    if(z.chargeActive){ ctx.save();ctx.globalAlpha=0.5;ctx.fillStyle='#ff6600';ctx.beginPath();ctx.arc(z.x,z.y,s*2,0,Math.PI*2);ctx.fill();ctx.restore(); }
+    ctx.save(); ctx.translate(z.x, z.y+bob); ctx.rotate(z.angle+Math.PI/2);
+    if(z.flashTimer>0) ctx.filter='brightness(8) saturate(0)';
+    // Body
+    ctx.fillStyle=enr?'#6b0000':'#8b0000';
+    ctx.beginPath();ctx.roundRect(-s*0.7,-s*0.55,s*1.4,s*1.35,6);ctx.fill();
+    // Shoulder plates
+    ctx.fillStyle='#2c0000';
+    ctx.beginPath();ctx.roundRect(-s*0.95,-s*0.3,s*0.32,s*0.65,3);ctx.fill();
+    ctx.beginPath();ctx.roundRect(s*0.63,-s*0.3,s*0.32,s*0.65,3);ctx.fill();
+    // Chest scars
+    ctx.strokeStyle='rgba(255,80,0,0.55)';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(-s*0.3,-s*0.2);ctx.lineTo(s*0.1,s*0.1);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(s*0.1,-s*0.15);ctx.lineTo(-s*0.15,s*0.15);ctx.stroke();
+    // Head
+    ctx.fillStyle='#6b0000';
+    ctx.beginPath();ctx.arc(0,-s*0.65,s*0.58,0,Math.PI*2);ctx.fill();
+    // Horns/spikes
+    ctx.fillStyle='#1a0000';
+    for(let i=-1;i<=1;i+=2){
+      ctx.beginPath();ctx.moveTo(i*s*0.28,-s*1.05);ctx.lineTo(i*s*0.42,-s*1.42);ctx.lineTo(i*s*0.15,-s*1.05);ctx.closePath();ctx.fill();
+    }
+    ctx.beginPath();ctx.moveTo(0,-s*1.1);ctx.lineTo(-s*0.12,-s*1.52);ctx.lineTo(s*0.12,-s*1.52);ctx.closePath();ctx.fill();
+    // Glowing eyes
+    ctx.shadowColor=enr?'#ff4400':'#ff0000'; ctx.shadowBlur=16;
+    ctx.fillStyle=enr?'#ff6600':'#ff2200';
+    ctx.beginPath();ctx.arc(-s*0.22,-s*0.68,s*0.14,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(s*0.22,-s*0.68,s*0.14,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+    // HP bar above boss
+    ctx.filter='none'; ctx.resetTransform();
+    const bw=s*3.2, bh=7, bx=z.x-bw/2, by=z.y+bob-s*1.8;
+    ctx.fillStyle='#1a0000';ctx.fillRect(bx,by,bw,bh);
+    ctx.fillStyle=hpPct>0.5?'#c62828':(hpPct>0.25?'#ff6d00':'#ff1744');
+    ctx.fillRect(bx,by,bw*hpPct,bh);
+    ctx.strokeStyle='#500';ctx.lineWidth=1;ctx.strokeRect(bx,by,bw,bh);
+    ctx.restore();
+    return;
+  }
+
   const t=z.ztype||'normal', bob=Math.sin(z.bobTimer)*3, now=Date.now();
   const hpPct=z.hp/z.maxHp, low=hpPct<0.3;
 
@@ -2171,6 +2499,7 @@ function gameOver() {
     ? `TEMPS AGUANTAT: ${formatTime(game.arenaTimer)}<br>IAs ELIMINADES: ${Math.floor(game.score/50)}<br>PUNTUACIÓ: ${game.score}`
     : `PUNTUACIÓ: ${game.score}<br>ONADA: ${game.wave}<br>NIVELL J1: ${p.level}${game.player2?`<br>NIVELL J2: ${game.player2.level}`:''}`;
   document.getElementById('arena-timer').style.display='none';
+  document.getElementById('boss-bar-wrap').style.display='none';
   document.getElementById('shop-btn').style.display='none';
   document.getElementById('coin-display').style.display='none';
   document.getElementById('inventory-bar').style.display='none';
