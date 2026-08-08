@@ -12,20 +12,35 @@
  *   REPO           [Text]   usuari/repositori     ex: guille/dead-zone
  *   BRANCH         [Text]   main
  *   FILE_PATH      [Text]   ranking.json
- *   ALLOWED_ORIGIN [Text]   https://usuari.github.io    (o * per permetre-ho tot)
+ *   ALLOWED_ORIGIN [Text]   Llista separada per comes dels orígens permesos, o * per tot.
+ *                          A itch.io el joc corre dins d'un iframe, i l'origen NO és
+ *                          https://elteuusuari.itch.io sinó el de l'iframe. Exemple:
+ *                          https://html-classic.itch.zone,https://usuari.github.io
  */
 
 const MAX_NAME = 12;
 const MAX_VAL  = 100000000;
 
+// ALLOWED_ORIGIN pot contenir diversos orígens separats per comes. Com que la
+// capçalera només n'admet un, retornem el de qui pregunta si és a la llista.
+function buildCors(request, env) {
+  const llista = String(env.ALLOWED_ORIGIN || '*').split(',').map((s) => s.trim()).filter(Boolean);
+  const origin = request.headers.get('Origin') || '';
+  const permet = llista.includes('*') ? '*'
+               : (origin && llista.includes(origin)) ? origin
+               : (llista[0] || '*');
+  return {
+    'Access-Control-Allow-Origin': permet,
+    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+  };
+}
+
 export default {
   async fetch(request, env) {
-    const cors = {
-      'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN || '*',
-      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Max-Age': '86400',
-    };
+    const cors = buildCors(request, env);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
     try {
