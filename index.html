@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
 <meta charset="UTF-8">
-<title>DEAD ZONE - Zombie Shooter</title>
+<title>Zombie Shooter</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
@@ -157,16 +157,6 @@
     text-shadow: 0 0 10px #ffd700; display: none; z-index: 200;
     font-family: 'Courier New', monospace; letter-spacing: 2px;
   }
-  #inventory-bar {
-    position: fixed; bottom: 155px; left: 30px;
-    display: none; gap: 6px; z-index: 20;
-  }
-  .inv-slot {
-    background: rgba(0,0,0,0.7); border: 1px solid #444; border-radius: 3px;
-    padding: 4px 8px; font-size: 11px; color: #aaa; cursor: pointer;
-    font-family: 'Courier New', monospace; letter-spacing: 1px; transition: border-color 0.15s;
-  }
-  .inv-slot.active { border-color: #ffd700; color: #ffd700; text-shadow: 0 0 6px #ffd700; }
   #shop-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.82); z-index: 100; display: none;
@@ -223,8 +213,16 @@
   #weapon-screen {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: #000; z-index: 100; display: none;
-    align-items: center; justify-content: center; flex-direction: column; pointer-events: all;
+    align-items: center; justify-content: flex-start; flex-direction: column; pointer-events: all;
+    overflow-y: auto; padding: 70px 16px;
   }
+  /* Centra verticalment si hi cap, però permet fer scroll quan hi ha moltes armes */
+  #weapon-screen > :first-child { margin-top: auto; }
+  #weapon-screen > :last-child  { margin-bottom: auto; }
+  #weapon-screen::-webkit-scrollbar { width: 10px; }
+  #weapon-screen::-webkit-scrollbar-track { background: #0a0a0a; }
+  #weapon-screen::-webkit-scrollbar-thumb { background: #333; border-radius: 5px; }
+  #weapon-screen::-webkit-scrollbar-thumb:hover { background: #555; }
   #weapon-player-label { color: #aaa; font-size: 14px; letter-spacing: 6px; margin-bottom: 6px; }
   #weapon-cards { display: flex; gap: 24px; margin-top: 10px; }
   .weapon-card {
@@ -253,6 +251,57 @@
   #boss-bar-track { width:320px; height:14px; background:#1a0000; border:2px solid #500; border-radius:3px; overflow:hidden; }
   #boss-hp-fill { height:100%; width:100%; background:linear-gradient(90deg,#c62828,#ff1744); transition:width 0.15s; }
   #boss-hp-label { color:#ff6666; font-size:11px; letter-spacing:2px; }
+
+  /* ── Nom de jugador i rànquing ── */
+  #player-name-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+  #player-name-label { color: #888; font-size: 11px; letter-spacing: 3px; }
+  #player-name-input {
+    background: #0d0d0d; border: 1px solid #333; color: #2ecc71;
+    font-family: 'Courier New', monospace; font-size: 14px; letter-spacing: 3px;
+    padding: 8px 14px; border-radius: 3px; width: 200px; text-align: center; outline: none;
+  }
+  #player-name-input:focus { border-color: #2ecc71; box-shadow: 0 0 12px rgba(46,204,113,0.25); }
+  .ranking-btn {
+    background: #1a1a1a; border: 2px solid #b8860b; color: #ffd700;
+    font-family: 'Courier New', monospace; font-size: 13px; letter-spacing: 3px;
+    padding: 10px 24px; border-radius: 3px; cursor: pointer; margin-top: 18px;
+    text-shadow: 0 0 8px #ffd700; transition: all 0.2s;
+  }
+  .ranking-btn:hover { background: #241d05; box-shadow: 0 0 18px rgba(255,215,0,0.4); }
+  #ranking-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9); z-index: 150; display: none;
+    align-items: center; justify-content: center; pointer-events: all;
+  }
+  #ranking-overlay.open { display: flex; }
+  #ranking-modal {
+    background: #0d0d0d; border: 2px solid #b8860b; border-radius: 6px;
+    padding: 28px 32px; max-width: 94vw; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 0 40px rgba(255,215,0,0.18);
+  }
+  #ranking-title { color: #ffd700; font-size: 24px; font-weight: bold; letter-spacing: 5px; text-align: center; text-shadow: 0 0 12px #ffd700; }
+  #ranking-note  { color: #666; font-size: 10px; letter-spacing: 2px; text-align: center; margin: 6px 0 22px; }
+  .rank-cols { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+  .rank-col  { background: #111; border: 1px solid #333; border-radius: 4px; padding: 16px 14px; width: 250px; }
+  .rank-col h3 { color: #fff; font-size: 12px; letter-spacing: 2px; text-align: center; }
+  .rank-col .rank-sub { color: #666; font-size: 9px; letter-spacing: 1px; text-align: center; margin: 4px 0 12px; }
+  .rank-row { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid #1e1e1e; font-size: 11px; color: #aaa; letter-spacing: 1px; }
+  .rank-row:last-child { border-bottom: none; }
+  .rank-row .pos { color: #555; width: 22px; flex-shrink: 0; }
+  .rank-row .nm  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rank-row .val { color: #f39c12; font-weight: bold; flex-shrink: 0; }
+  .rank-row.me   { color: #2ecc71; background: rgba(46,204,113,0.06); }
+  .rank-row.top1 .pos, .rank-row.top1 .val { color: #ffd700; text-shadow: 0 0 8px rgba(255,215,0,0.5); }
+  .rank-empty { color: #555; font-size: 10px; text-align: center; padding: 16px 0; letter-spacing: 1px; }
+  #ranking-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; gap: 16px; }
+  #ranking-close-btn, #ranking-clear-btn {
+    background: #2c2c2c; color: #aaa; border: 1px solid #444; border-radius: 3px;
+    padding: 8px 24px; cursor: pointer; font-size: 12px; letter-spacing: 2px; font-family: inherit;
+  }
+  #ranking-close-btn:hover { background: #3a3a3a; }
+  #ranking-clear-btn { color: #7b3b3b; border-color: #3a2020; }
+  #ranking-clear-btn:hover { background: #2a1515; color: #e74c3c; }
+  #record-msg { color: #ffd700; font-size: 13px; letter-spacing: 2px; text-shadow: 0 0 10px #ffd700; margin-top: 8px; min-height: 18px; }
 
   #creator-code-wrap {
     position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
@@ -302,11 +351,17 @@
     <div class="ctrl"><span>SPACE / ENTER</span> — Bomba J1/J2</div>
     <div class="ctrl"><span>1-2-3 / 7-8-9</span> — Pocions J1/J2</div>
   </div>
+  <div id="player-name-wrap">
+    <span id="player-name-label">NOM:</span>
+    <input id="player-name-input" type="text" maxlength="12" placeholder="EL TEU NOM" autocomplete="off" spellcheck="false"
+           oninput="this.value=this.value.toUpperCase()" onchange="setPlayerName(this.value)" onblur="setPlayerName(this.value)">
+  </div>
   <div class="mode-btns">
     <button class="mode-btn" onclick="startSingle()">1 JUGADOR</button>
     <button class="mode-btn multi" onclick="startMulti()">2 JUGADORS</button>
     <button class="mode-btn arena" onclick="startArena()">⚔️ ARENA</button>
   </div>
+  <button class="ranking-btn" onclick="showRanking()">🏆 RÀNQUING</button>
   <div id="creator-code-wrap">
     <div style="display:flex;gap:10px;">
       <input id="creator-code-input" type="text" placeholder="CODI DE CREADOR" autocomplete="off" spellcheck="false" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')redeemCode()">
@@ -391,7 +446,6 @@
     DANY: <span id="stat-dmg">25</span> |
     VIDA MÀX: <span id="stat-maxhp">100</span>
   </div>
-  <div id="inventory-bar"></div>
 </div>
 
 <button id="shop-btn" onclick="toggleShop()">🛒 BOTIGA</button>
@@ -418,7 +472,21 @@
 <div id="gameover-screen">
   <div id="gameover-title">GAME OVER</div>
   <div id="gameover-stats"></div>
+  <div id="record-msg"></div>
   <button id="restart-btn" onclick="showModeSelect()">TORNAR A JUGAR</button>
+  <button class="ranking-btn" onclick="showRanking()" style="margin-top:14px">🏆 RÀNQUING</button>
+</div>
+
+<div id="ranking-overlay">
+  <div id="ranking-modal">
+    <div id="ranking-title">🏆 RÀNQUING</div>
+    <div id="ranking-note">RÈCORDS GUARDATS EN AQUEST NAVEGADOR</div>
+    <div class="rank-cols" id="ranking-cols"></div>
+    <div id="ranking-actions">
+      <button id="ranking-clear-btn" onclick="clearRanking()">🗑 ESBORRAR</button>
+      <button id="ranking-close-btn" onclick="hideRanking()">✕ TANCAR</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -442,43 +510,86 @@ const WEAPONS = {
   },
   flamethrower: {
     key:'flamethrower', type:'flame', name:'LLANÇA FLAMES', icon:'🔥',
-    ammo:900, maxAmmo:900, damage:22, shootRate:1, reloadTime:420,
+    ammo:600, maxAmmo:600, damage:22, shootRate:1, reloadTime:420,
     range:420,
   },
   bazooka: {
     key:'bazooka', type:'rocket', name:'BAZUCA', icon:'🚀',
     ammo:5, maxAmmo:5, damage:60, shootRate:300, reloadTime:300,
-    spread:0, pellets:1, range:800, price:70,
+    spread:0, pellets:1, range:800, price:140,
   },
   throwing_knives: {
     key:'throwing_knives', type:'knife', name:'GANIVETS', icon:'🔪',
     ammo:15, maxAmmo:15, damage:30, shootRate:30, reloadTime:210,
-    spread:0, pellets:1, range:400, price:40,
+    spread:0, pellets:1, range:400, price:110,
   },
   heavy_pistol: {
     key:'heavy_pistol', type:'gun', name:'PISTOLA PESADA', icon:'🔫',
     ammo:25, maxAmmo:25, damage:35, shootRate:120, reloadTime:120,
-    spread:0.02, pellets:1, range:600, price:50,
+    spread:0.02, pellets:1, range:600, price:120,
   },
   smg: {
     key:'smg', type:'gun', name:'SMG', icon:'🔫',
     ammo:60, maxAmmo:60, damage:8, shootRate:4, reloadTime:180,
-    spread:0.1, pellets:1, range:280, price:30,
+    spread:0.1, pellets:1, range:280, price:100,
   },
   sniper: {
     key:'sniper', type:'gun', name:'FRANCTIRADOR', icon:'🎯',
     ammo:6, maxAmmo:6, damage:150, shootRate:90, reloadTime:300,
-    spread:0, pellets:1, range:1500, price:60,
+    spread:0, pellets:1, range:1500, price:130,
   },
   double_shotgun: {
     key:'double_shotgun', type:'gun', name:'ESCOPETA DOBLE', icon:'💥',
     ammo:8, maxAmmo:8, damage:35, shootRate:45, reloadTime:540,
-    pellets:10, spread:0.5, range:250, price:50,
+    pellets:10, spread:0.5, range:250, price:120,
   },
   grenade_launcher: {
     key:'grenade_launcher', type:'rocket', name:'LLANÇA-GRANADES', icon:'🧨',
     ammo:8, maxAmmo:8, damage:80, shootRate:90, reloadTime:360,
-    spread:0, pellets:1, range:700, price:75,
+    spread:0, pellets:1, range:700, price:185,
+  },
+  // ── Armes noves ──
+  laser_rifle: {
+    key:'laser_rifle', type:'laser', name:'RIFLE LÀSER', icon:'🔆',
+    ammo:40, maxAmmo:40, damage:20, shootRate:8, reloadTime:240,
+    spread:0.015, pellets:1, range:900, price:135,
+    pierce:3, bulletSpeed:22, bulletLife:110, muzzleColor:'#00e5ff',
+  },
+  freeze_gun: {
+    key:'freeze_gun', type:'ice', name:'CANÓ DE GEL', icon:'❄️',
+    ammo:32, maxAmmo:32, damage:12, shootRate:12, reloadTime:270,
+    spread:0.14, pellets:2, range:320, price:115,
+    freeze:100, bulletSpeed:11, bulletLife:34, muzzleColor:'#b3e5fc',
+  },
+  tesla_gun: {
+    key:'tesla_gun', type:'tesla', name:'FUSELL TESLA', icon:'⚡',
+    ammo:20, maxAmmo:20, damage:30, shootRate:26, reloadTime:300,
+    spread:0.05, pellets:1, range:500, price:155,
+    chain:3, chainRange:160, bulletSpeed:16, bulletLife:46, muzzleColor:'#80d8ff',
+  },
+  fire_crossbow: {
+    key:'fire_crossbow', type:'knife', name:'BALLESTA ÍGNIA', icon:'🏹',
+    ammo:12, maxAmmo:12, damage:45, shootRate:38, reloadTime:270,
+    spread:0.01, pellets:1, range:600, price:125,
+    burn:200, pierce:1, bulletSpeed:17, bulletLife:60, muzzleColor:'#ff6b35',
+  },
+  railgun: {
+    key:'railgun', type:'rail', name:'RAILGUN', icon:'🛰️',
+    ammo:4, maxAmmo:4, damage:220, shootRate:150, reloadTime:420,
+    spread:0, pellets:1, range:1600, price:230,
+    pierce:99, bulletSpeed:34, bulletLife:70, muzzleColor:'#e040fb',
+  },
+  minigun: {
+    key:'minigun', type:'gun', name:'MINIGUN', icon:'🌀',
+    ammo:250, maxAmmo:250, damage:7, shootRate:2, reloadTime:600,
+    spread:0.19, pellets:1, range:340, price:205,
+    bulletSpeed:15, bulletLife:36, muzzleColor:'#ffca28',
+  },
+  plasma_cannon: {
+    key:'plasma_cannon', type:'rocket', name:'CANÓ DE PLASMA', icon:'🟣',
+    ammo:6, maxAmmo:6, damage:110, shootRate:75, reloadTime:390,
+    spread:0, pellets:1, range:750, price:210,
+    bulletSpeed:12, muzzleColor:'#e040fb',
   },
 };
 
@@ -555,15 +666,188 @@ function loadSavedData() {
       d.ownedSkins  = d.ownedSkins  || ['default'];
       d.selectedSkin= d.selectedSkin|| 'default';
       d.armorLevel  = d.armorLevel  || 0;
+      d.playerName  = d.playerName  || '';
+      d.coins       = d.coins       || 0;
+      d.shopWeapons = Array.isArray(d.shopWeapons) ? d.shopWeapons.filter(k=>WEAPONS[k]) : [];
+      d.savedBombs  = d.savedBombs  || {mine:0,areaBlast:0,missile:0};
       return d;
     }
   } catch(e) {}
-  return { coins:0, shopWeapons:[], savedBombs:{mine:0,areaBlast:0,missile:0}, ownedSkins:['default'], selectedSkin:'default', armorLevel:0 };
+  return { coins:0, shopWeapons:[], savedBombs:{mine:0,areaBlast:0,missile:0}, ownedSkins:['default'], selectedSkin:'default', armorLevel:0, playerName:'' };
 }
 function persistSavedData() {
   try { localStorage.setItem('deadzone_save', JSON.stringify(savedData)); } catch(e) {}
 }
 let savedData = loadSavedData();
+
+// ── RÀNQUING GLOBAL ───────────────────────────────────────────────────────────
+// Enganxa aquí la URL del teu Worker de Cloudflare (sense barra final), p.ex.:
+//   const RANKING_API = 'https://deadzone-ranking.elteuusuari.workers.dev';
+// Si es deixa buit, el joc funciona igual però el rànquing només guarda els
+// rècords d'aquest navegador.
+const RANKING_API = '';
+
+let remoteRanking = null;    // últim rànquing global rebut
+let remoteState   = 'off';   // 'off' | 'loading' | 'ok' | 'error'
+
+function rankingOnline() { return !!RANKING_API; }
+
+async function fetchRemoteRanking() {
+  if (!rankingOnline()) { remoteState='off'; return null; }
+  remoteState = 'loading';
+  try {
+    const res = await fetch(RANKING_API, { cache:'no-store' });
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    const list = await res.json();
+    if (!Array.isArray(list)) throw new Error('format inesperat');
+    remoteRanking = list; remoteState = 'ok';
+    return list;
+  } catch (e) {
+    remoteState = 'error';
+    return null;
+  }
+}
+
+// Cua de partides pendents d'enviar: si estàs sense connexió quan mors,
+// s'envien soles la propera vegada que el joc pugui.
+function loadPending() {
+  try { const p=JSON.parse(localStorage.getItem('dz_pending')||'[]'); return Array.isArray(p)?p:[]; }
+  catch(e) { return []; }
+}
+function savePending(p) {
+  try { localStorage.setItem('dz_pending', JSON.stringify(p.slice(-25))); } catch(e) {}
+}
+let flushing = false;
+async function flushPending() {
+  // Un sol enviament alhora: si no, dues crides seguides enviarien la mateixa
+  // partida dues vegades i els zombis es comptarien doble.
+  if (!rankingOnline() || flushing) return;
+  const lot = loadPending();
+  if (!lot.length) return;
+  flushing = true;
+  savePending([]);                 // treu-les de la cua ABANS d'enviar-les
+  const fallides = [];
+  try {
+    for (const run of lot) {
+      try {
+        const res = await fetch(RANKING_API, {
+          method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(run)
+        });
+        if (!res.ok) throw new Error('HTTP '+res.status);
+        const list = await res.json();
+        if (Array.isArray(list)) { remoteRanking = list; remoteState = 'ok'; }
+      } catch (e) {
+        fallides.push(run);        // sense connexió: ho tornarem a provar
+        remoteState = 'error';
+      }
+    }
+  } finally {
+    // conserva el que s'hagi encuat mentre enviàvem, i torna-hi les fallides
+    if (fallides.length) savePending(fallides.concat(loadPending()));
+    flushing = false;
+  }
+  // partides encuades mentre enviàvem (només si no hi ha hagut errors)
+  if (!fallides.length && loadPending().length) await flushPending();
+}
+function queueRun(coins, kills, score) {
+  if (!rankingOnline()) return;
+  const pend = loadPending();
+  pend.push({ name:getPlayerName(), coins, kills, score });
+  savePending(pend);
+  flushPending();
+}
+
+// ── NOM DE JUGADOR I RÀNQUING (local, guardat en aquest navegador) ────────────
+function getPlayerName() { return (savedData.playerName||'').trim() || 'ANÒNIM'; }
+function setPlayerName(v) {
+  savedData.playerName = (v||'').toUpperCase().replace(/\s+/g,' ').trim().slice(0,12);
+  persistSavedData();
+}
+function loadRanking() {
+  try { const r = JSON.parse(localStorage.getItem('dz_ranking')||'[]'); return Array.isArray(r)?r:[]; }
+  catch(e) { return []; }
+}
+function saveRanking(r) { try { localStorage.setItem('dz_ranking', JSON.stringify(r)); } catch(e) {} }
+
+// Desa el resultat d'una partida. Monedes i punts guarden el MILLOR registre,
+// els zombis s'acumulen entre partides.
+function recordRun(coins, kills, score) {
+  const name = getPlayerName();
+  const r = loadRanking();
+  let e = r.find(x => x.name === name);
+  if (!e) { e = {name, coins:0, kills:0, score:0, games:0}; r.push(e); }
+  const records = [];
+  if (coins > (e.coins||0)) { e.coins = coins; records.push('🪙 MONEDES'); }
+  if (score > (e.score||0)) { e.score = score; records.push('🏆 PUNTS'); }
+  e.kills = (e.kills||0) + kills;
+  e.games = (e.games||0) + 1;
+  e.updated = Date.now();
+  saveRanking(r);
+  return records;
+}
+
+const RANK_COLS = [
+  { key:'coins', title:'🪙 MÉS MONEDES', sub:'MÀXIM ASSOLIT',        fmt:v=>'🪙 '+v },
+  { key:'kills', title:'💀 MÉS ZOMBIS',  sub:'TOTAL DE TOTES LES PARTIDES', fmt:v=>v+' 💀' },
+  { key:'score', title:'🏆 MÉS PUNTS',   sub:'MILLOR PARTIDA',       fmt:v=>v+' PTS' },
+];
+
+// Obre el rànquing: mostra de seguida el que tenim i el refresca amb el global.
+function showRanking() {
+  document.getElementById('ranking-overlay').classList.add('open');
+  renderRanking();
+  if (rankingOnline()) {
+    flushPending()
+      .then(fetchRemoteRanking)
+      .then(renderRanking)
+      .catch(() => renderRanking());
+  }
+}
+
+function renderRanking() {
+  const usaGlobal = remoteState === 'ok' && Array.isArray(remoteRanking);
+  const r = usaGlobal ? remoteRanking : loadRanking();
+  const me = getPlayerName();
+
+  const note = document.getElementById('ranking-note');
+  const pendents = loadPending().length;
+  if (!rankingOnline())            note.textContent = 'RÈCORDS GUARDATS EN AQUEST NAVEGADOR';
+  else if (remoteState==='loading')note.textContent = '⏳ CARREGANT EL RÀNQUING GLOBAL…';
+  else if (usaGlobal)              note.textContent = '🌍 RÀNQUING GLOBAL' + (pendents?` · ${pendents} PARTIDA(ES) PENDENTS D'ENVIAR`:'');
+  else                             note.textContent = '⚠ SENSE CONNEXIÓ — MOSTRANT ELS RÈCORDS D\'AQUEST NAVEGADOR';
+  note.style.color = usaGlobal ? '#2ecc71' : (remoteState==='error' ? '#e67e22' : '#666');
+
+  const cont = document.getElementById('ranking-cols');
+  cont.innerHTML = '';
+  RANK_COLS.forEach(col => {
+    const top = r.filter(e => (e[col.key]||0) > 0)
+                 .sort((a,b) => (b[col.key]||0) - (a[col.key]||0))
+                 .slice(0,10);
+    const div = document.createElement('div');
+    div.className = 'rank-col';
+    const rows = top.length
+      ? top.map((e,i) => {
+          const cls = 'rank-row' + (i===0?' top1':'') + (e.name===me?' me':'');
+          const medal = ['🥇','🥈','🥉'][i] || (i+1)+'.';
+          return `<div class="${cls}"><span class="pos">${medal}</span><span class="nm">${escapeHtml(e.name)}</span><span class="val">${col.fmt(e[col.key]||0)}</span></div>`;
+        }).join('')
+      : '<div class="rank-empty">ENCARA NO HI HA REGISTRES</div>';
+    div.innerHTML = `<h3>${col.title}</h3><div class="rank-sub">${col.sub}</div>${rows}`;
+    cont.appendChild(div);
+  });
+}
+function hideRanking() { document.getElementById('ranking-overlay').classList.remove('open'); }
+function clearRanking() {
+  const msg = rankingOnline()
+    ? 'Això esborra només els rècords d\'AQUEST navegador. El rànquing global no es toca. Continuar?'
+    : 'Segur que vols esborrar tot el rànquing? No es pot desfer.';
+  if (!confirm(msg)) return;
+  saveRanking([]);
+  renderRanking();
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 // ── GAME STATE ────────────────────────────────────────────────────────────────
 function createGame() {
@@ -572,7 +856,7 @@ function createGame() {
   const mapH = isArena ? 1600 : 2000;
   return {
     running: false, mode: selectedMode,
-    score: 0, wave: 1,
+    score: 0, wave: 1, kills: 0,
     waveTimer: 0, waveInterval: 600,
     spawnTimer: 0, spawnRate: 120,
     zombiesThisWave: 0, maxZombiesWave: isArena ? 0 : 5,
@@ -584,7 +868,7 @@ function createGame() {
     structures:[], placingStructure:null,
     bombProjectiles:[], enemyBombs:[], fireZones:[],
     minesOnGround:[], areaBlastZones:[], missileProjectiles:[],
-    bots:[], arenaTimer:0, arenaSpawnTimer:0,
+    bots:[], arenaTimer:0, arenaSpawnTimer:0, arcs:[],
     damageNumbers:[], shake:0,
     keys:{}, mouse:{x:0,y:0},
     camX:0, camY:0, mapW, mapH,
@@ -622,6 +906,7 @@ function showModeSelect() {
   document.getElementById('shop-btn').style.display = 'block';
   document.getElementById('coin-display').style.display = 'block';
   document.getElementById('coin-display').textContent = `🪙 ${savedData.coins}`;
+  document.getElementById('player-name-input').value = savedData.playerName || '';
 }
 function startSingle() { selectedMode = 'single'; showWeaponSelect(1); }
 function startMulti()  { selectedMode = 'multi';  showWeaponSelect(1); }
@@ -629,6 +914,9 @@ function startArena()  { selectedMode = 'arena';  showWeaponSelect(1); }
 
 function showWeaponSelect(playerNum) {
   selectingPlayer = playerNum;
+  // agafa el nom encara que l'input no hagi perdut el focus
+  const nameInput = document.getElementById('player-name-input');
+  if (nameInput && nameInput.value.trim()) setPlayerName(nameInput.value);
   document.getElementById('start-screen').style.display = 'none';
   document.getElementById('gameover-screen').classList.remove('active');
   document.getElementById('shop-btn').style.display = 'block';
@@ -678,6 +966,9 @@ function showWeaponSelect(playerNum) {
 
 // ── CONTROLS ──────────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
+  // No capturis les tecles mentre s'escriu en un camp de text (nom, codi de creador)
+  const t=e.target;
+  if (t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable)) return;
   if (!game) return;
   if (e.key==='Tab') { e.preventDefault(); if(game.running) switchWeapon(game.player,1); return; }
   game.keys[e.key] = true;
@@ -700,7 +991,11 @@ document.addEventListener('keydown', e => {
   }
   e.preventDefault();
 });
-document.addEventListener('keyup', e => { if (game) game.keys[e.key] = false; });
+document.addEventListener('keyup', e => {
+  const t=e.target;
+  if (t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable)) return;
+  if (game) game.keys[e.key] = false;
+});
 document.addEventListener('mousemove', e => { if (game) { game.mouse.x=e.clientX; game.mouse.y=e.clientY; } });
 document.addEventListener('mousedown', e => {
   if (game && game.running && game.placingStructure) {
@@ -850,7 +1145,7 @@ function update() {
     }
 
     const ang = Math.atan2(target.y-z.y, target.x-z.x);
-    if(!z.chargeActive){ z.x += Math.cos(ang)*z.speed; z.y += Math.sin(ang)*z.speed; }
+    if(!z.chargeActive){ const spd=z.frozen>0?z.speed*0.35:z.speed; z.x+=Math.cos(ang)*spd; z.y+=Math.sin(ang)*spd; if(z.frozen>0)z.frozen--; }
     z.angle = ang; z.bobTimer += 0.12;
     if (z.flashTimer>0) z.flashTimer--;
     // Burn DoT (mark only — removal handled below)
@@ -941,19 +1236,37 @@ function update() {
     // Zombie hit (non-arena or turret bullets in any mode)
     for (let i=g.zombies.length-1;i>=0;i--) {
       const z=g.zombies[i];
+      if (z.hp<=0) continue;
+      if (b.hitList && b.hitList.includes(z)) continue;
       if (dist(b,z)<z.size) {
         const dmgDealt = b.damage * (1-(z.armor||0));
         z.hp -= dmgDealt;
         z.flashTimer = 5;
+        z.lastHitBy = b.owner;
+        // Fire bullets: aplica cremada
+        if(b.owner&&b.owner.fireBullets>0){ z.burnTimer=Math.max(z.burnTimer||0,80+b.owner.fireBullets*30); z.burnOwner=b.owner; }
+        // Efectes de les armes noves
+        if (b.freeze) { z.frozen=Math.max(z.frozen||0,b.freeze); spawnParticles(z.x,z.y,'#b3e5fc',5); }
+        if (b.burn)   { z.burnTimer=Math.max(z.burnTimer||0,b.burn); z.burnOwner=b.owner; }
         spawnParticles(z.x,z.y, z.ztype==='armored'?'#607d8b':'#e74c3c', 6);
         g.damageNumbers.push({x:z.x+(Math.random()-0.5)*20, y:z.y-z.size-10, val:Math.round(dmgDealt), alpha:1, vy:-1.2, life:40, crit: dmgDealt>b.damage*1.8});
-        addKillMsg(`💀 -${Math.round(dmgDealt)}${z.armor?'🛡️':''}`);
-        if (z.hp<=0) { killZombie(z,b.owner); g.zombies.splice(i,1); }
+        addKillMsg(`💀 -${Math.round(dmgDealt)}${z.armor?'🛡️':''}${b.owner?.fireBullets>0||b.burn?'🔥':''}${b.freeze?'❄️':''}`);
+        if (b.chain) chainLightning(b, z, g);
+        // Bales perforants: travessen l'enemic i continuen
+        if (b.pierce>0) { b.pierce--; b.hitList.push(z); continue; }
         return false;
       }
     }
     return true;
   });
+
+  // Elimina zombis morts per cadena elèctrica / bales perforants
+  for (let i=g.zombies.length-1;i>=0;i--) {
+    if (g.zombies[i].hp<=0) { killZombie(g.zombies[i], g.zombies[i].lastHitBy||null); g.zombies.splice(i,1); }
+  }
+
+  // ── Arcs elèctrics (visual) ──
+  g.arcs = g.arcs.filter(a => { a.life--; return a.life>0; });
 
   // ── Particles ──
   g.particles = g.particles.filter(pt => {
@@ -964,8 +1277,8 @@ function update() {
   // ── Pickups ──
   g.pickups = g.pickups.filter(pk => {
     pk.bobTime = (pk.bobTime||0)+0.05;
-    if (p.hp>0  && dist(pk,p)  < p.size+15)  { collectPickup(pk,p);  return false; }
-    if (p2&&p2.hp>0 && dist(pk,p2) < p2.size+15) { collectPickup(pk,p2); return false; }
+    if (p.hp>0  && dist(pk,p)  < (p.size+15)*(p.pickupRadius||1))  { collectPickup(pk,p);  return false; }
+    if (p2&&p2.hp>0 && dist(pk,p2) < (p2.size+15)*(p2.pickupRadius||1)) { collectPickup(pk,p2); return false; }
     return true;
   });
 
@@ -1094,11 +1407,146 @@ function update() {
       });
       g.zombies.forEach(z=>{if(dist(s,z)<18+z.size)s.hp-=z.damage*0.05;});
       if (s.hp<=0){g.structures.splice(si,1);addKillMsg('🔥 Foguera destruïda!');continue;}
+
+    } else if (s.type==='fast_turret') {
+      if (s.timer%30===0) {
+        let nearest=null,nd=Infinity;
+        g.zombies.forEach(z=>{const d=dist(s,z);if(d<nd&&d<180){nd=d;nearest=z;}});
+        if (nearest) {
+          const ang=Math.atan2(nearest.y-s.y,nearest.x-s.x); s.aimAngle=ang;
+          g.bullets.push({x:s.x,y:s.y,vx:Math.cos(ang)*14,vy:Math.sin(ang)*14,life:100,damage:12,owner:null,color:'#80cbc4'});
+        }
+      }
+      g.zombies.forEach(z=>{if(dist(s,z)<18+z.size)s.hp-=z.damage*0.06;});
+      if (s.hp<=0){g.structures.splice(si,1);addKillMsg('🔩 Toreta ràpida destruïda!');continue;}
+
+    } else if (s.type==='freezer') {
+      g.zombies.forEach(z=>{if(dist(s,z)<80) z.frozen=15;});
+      if(s.timer%45===0) spawnParticles(s.x,s.y,'#b3e5fc',2);
+
+    } else if (s.type==='barrel') {
+      // Auto-trigger si zombi molt a prop
+      let triggered=false;
+      for(const z of g.zombies){if(dist(s,z)<35){triggered=true;break;}}
+      g.zombies.forEach(z=>{if(dist(s,z)<18+z.size)s.hp-=z.damage*0.1;});
+      if(s.hp<=0||triggered){
+        // BOOM
+        spawnParticles(s.x,s.y,'#ff5722',40);spawnParticles(s.x,s.y,'#ffd700',25);spawnParticles(s.x,s.y,'#fff',15);
+        g.shake=Math.max(g.shake,18);
+        for(let i=g.zombies.length-1;i>=0;i--){const z=g.zombies[i];if(dist(s,z)<160){z.hp-=150*(1-(z.armor||0));if(z.hp<=0){killZombie(z,null);g.zombies.splice(i,1);}}}
+        [p,...(p2?[p2]:[])].forEach(pl=>{if(pl.hp>0&&dist(s,pl)<160)damagePlayer(pl,40);});
+        g.structures.splice(si,1);addKillMsg('💥 BARRIL EXPLOTAT!');continue;
+      }
+
+    } else if (s.type==='tesla') {
+      if(s.timer%120===0){
+        const targets=g.zombies.filter(z=>dist(s,z)<110).sort((a,b)=>dist(s,a)-dist(s,b)).slice(0,3);
+        targets.forEach(z=>{
+          z.hp-=70*(1-(z.armor||0));z.flashTimer=8;
+          spawnParticles(z.x,z.y,'#e1f5fe',8);spawnParticles(z.x,z.y,'#fff',4);
+          if(z.hp<=0){killZombie(z,g.player);}
+        });
+        if(targets.length){g.shake=Math.max(g.shake,5);addKillMsg(`🌩️ Tesla: ${targets.length} zombis!`);}
+        for(let i=g.zombies.length-1;i>=0;i--){if(g.zombies[i].hp<=0&&!g.zombies[i].isBoss){killZombie(g.zombies[i],g.player);g.zombies.splice(i,1);}}
+      }
+      g.zombies.forEach(z=>{if(dist(s,z)<18+z.size)s.hp-=z.damage*0.05;});
+      if(s.hp<=0){g.structures.splice(si,1);addKillMsg('🌩️ Torre Tesla destruïda!');continue;}
+
+    } else if (s.type==='dispenser') {
+      if(s.timer%720===0&&s.timer>0){
+        g.pickups.push({x:s.x+(Math.random()-0.5)*30,y:s.y+(Math.random()-0.5)*30,type:'hp',bobTime:0});
+        addKillMsg('💊 Dispensador: poció generada!');
+      }
+      g.zombies.forEach(z=>{if(dist(s,z)<18+z.size)s.hp-=z.damage*0.05;});
+      if(s.hp<=0){g.structures.splice(si,1);addKillMsg('💊 Dispensador destruït!');continue;}
+
+    } else if (s.type==='drone_combat') {
+      s.vx=s.vx||0; s.vy=s.vy||0;
+      // Find nearest zombie within pursue range
+      let nearest=null, nd=Infinity;
+      g.zombies.forEach(z=>{const d=dist(s,z);if(d<nd&&d<300){nd=d;nearest=z;}});
+      if (nearest) {
+        const ang=Math.atan2(nearest.y-s.y,nearest.x-s.x);
+        s.aimAngle=ang;
+        if(nd>100){ s.vx+=Math.cos(ang)*0.45; s.vy+=Math.sin(ang)*0.45; }  // chase
+        else       { s.vx*=0.82; s.vy*=0.82; }                               // hover at attack range
+        // Fire every 1.5s
+        if(s.timer%90===0){
+          g.bullets.push({x:s.x,y:s.y,vx:Math.cos(ang)*13,vy:Math.sin(ang)*13,life:130,damage:25,owner:null,color:'#00e5ff'});
+          spawnParticles(s.x,s.y,'#00e5ff',3);
+        }
+      } else {
+        // No zombies → drift back toward player
+        const dp=dist(s,p);
+        if(dp>90){const a=Math.atan2(p.y-s.y,p.x-s.x);s.vx+=Math.cos(a)*0.3;s.vy+=Math.sin(a)*0.3;}
+      }
+      s.vx*=0.92; s.vy*=0.92;
+      const dspd=Math.sqrt(s.vx*s.vx+s.vy*s.vy); if(dspd>3.5){s.vx=s.vx/dspd*3.5;s.vy=s.vy/dspd*3.5;}
+      s.x+=s.vx; s.y+=s.vy;
+      s.x=Math.max(20,Math.min(g.mapW-20,s.x)); s.y=Math.max(20,Math.min(g.mapH-20,s.y));
+      g.zombies.forEach(z=>{if(dist(s,z)<14+z.size)s.hp-=z.damage*0.04;});
+      if(s.hp<=0){spawnParticles(s.x,s.y,'#00e5ff',20);g.structures.splice(si,1);addKillMsg('🚁 Dron destruït!');continue;}
+
+    } else if (s.type==='drone_healer') {
+      s.vx=s.vx||0; s.vy=s.vy||0;
+      // Follow player: keep 55–95px away
+      const dp=dist(s,p);
+      const fa=Math.atan2(p.y-s.y,p.x-s.x);
+      if(dp>95)      { s.vx+=Math.cos(fa)*0.35; s.vy+=Math.sin(fa)*0.35; }
+      else if(dp<55) { s.vx-=Math.cos(fa)*0.25; s.vy-=Math.sin(fa)*0.25; }
+      // Small random drift so it feels alive
+      s.vx+=(Math.random()-0.5)*0.12; s.vy+=(Math.random()-0.5)*0.12;
+      s.vx*=0.92; s.vy*=0.92;
+      const hspd=Math.sqrt(s.vx*s.vx+s.vy*s.vy); if(hspd>2.5){s.vx=s.vx/hspd*2.5;s.vy=s.vy/hspd*2.5;}
+      s.x+=s.vx; s.y+=s.vy;
+      s.x=Math.max(20,Math.min(g.mapW-20,s.x)); s.y=Math.max(20,Math.min(g.mapH-20,s.y));
+      // Heal player when below 70% HP, every 6s
+      if(s.timer%360===0&&s.timer>0){
+        [p,...(p2?[p2]:[])].forEach(pl=>{
+          if(pl.hp>0&&pl.hp<pl.maxHp*0.70){
+            pl.hp=Math.min(pl.maxHp,pl.hp+8);
+            spawnParticles(pl.x,pl.y,'#69f0ae',10);
+            addKillMsg('🏥 Dron: +8 HP');
+          }
+        });
+      }
+      g.zombies.forEach(z=>{if(dist(s,z)<14+z.size)s.hp-=z.damage*0.04;});
+      if(s.hp<=0){spawnParticles(s.x,s.y,'#69f0ae',20);g.structures.splice(si,1);addKillMsg('🏥 Dron curador destruït!');continue;}
     }
   }
 
   document.getElementById('place-hint').style.display = g.placingStructure?'block':'none';
   updateUI();
+
+  // ── Revive system (2-player only) ──
+  if (g.mode==='multi' && p2) {
+    if (p.invincible>0)  p.invincible--;
+    if (p2.invincible>0) p2.invincible--;
+    // P1 holds [F] near downed P2
+    if (p2.downed && p.hp>0 && dist(p,p2)<60) {
+      if (g.keys['f']||g.keys['F']) {
+        p.reviveProgress=(p.reviveProgress||0)+1;
+        if (p.reviveProgress>=180) {
+          p2.downed=false; p2.hp=Math.max(1,Math.floor(p2.maxHp*0.30));
+          p2.invincible=180; p.reviveProgress=0;
+          spawnParticles(p2.x,p2.y,'#2ecc71',20);
+          addKillMsg('✅ J2 RESSUSCITAT! (+30% HP)');
+        }
+      } else { p.reviveProgress=0; }
+    } else { p.reviveProgress=0; }
+    // P2 holds [Shift] near downed P1
+    if (p.downed && p2.hp>0 && dist(p2,p)<60) {
+      if (g.keys['Shift']) {
+        p2.reviveProgress=(p2.reviveProgress||0)+1;
+        if (p2.reviveProgress>=180) {
+          p.downed=false; p.hp=Math.max(1,Math.floor(p.maxHp*0.30));
+          p.invincible=180; p2.reviveProgress=0;
+          spawnParticles(p.x,p.y,'#2ecc71',20);
+          addKillMsg('✅ J1 RESSUSCITAT! (+30% HP)');
+        }
+      } else { p2.reviveProgress=0; }
+    } else { p2.reviveProgress=0; }
+  }
 
   // ── Game over ──
   const allDead = p.hp<=0 && (!p2||p2.hp<=0);
@@ -1190,16 +1638,41 @@ function spawnFlameParticles(pl, g) {
 // ── GAME FUNCTIONS ────────────────────────────────────────────────────────────
 function shoot(player) {
   if (player.weapon.type==='flame'||player.ammo<=0||player.reloading) return;
-  const isRocket=player.weapon.type==='rocket';
-  const spd=isRocket?9:14, pellets=player.weapon.pellets||1, spreadAmt=player.weapon.spread||0.04;
+  const w=player.weapon;
+  const isRocket=w.type==='rocket';
+  const spd=w.bulletSpeed||(isRocket?9:14), pellets=w.pellets||1, spreadAmt=w.spread||0.04;
   const eff=getEffectiveDamage(player);
   for (let i=0;i<pellets;i++) {
     const ang=player.angle+(Math.random()-0.5)*spreadAmt*2;
-    const bLife=isRocket?Math.round(player.weapon.range/spd):80;
-    game.bullets.push({x:player.x+Math.cos(ang)*22,y:player.y+Math.sin(ang)*22,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,life:bLife,damage:eff,owner:player,color:player.color,weaponType:player.weapon.type});
+    const bLife=w.bulletLife||(isRocket?Math.round(w.range/spd):80);
+    game.bullets.push({x:player.x+Math.cos(ang)*22,y:player.y+Math.sin(ang)*22,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,life:bLife,damage:eff,owner:player,color:player.color,weaponType:w.type,
+      pierce:w.pierce||0, hitList:[], freeze:w.freeze||0, burn:w.burn||0, chain:w.chain||0, chainRange:w.chainRange||160});
   }
   player.ammo--; player.shootCooldown=player.shootRate;
-  spawnParticles(player.x+Math.cos(player.angle)*22,player.y+Math.sin(player.angle)*22,isRocket?'#ff6b35':'#f39c12',pellets>1?pellets:3);
+  spawnParticles(player.x+Math.cos(player.angle)*22,player.y+Math.sin(player.angle)*22,w.muzzleColor||(isRocket?'#ff6b35':'#f39c12'),pellets>1?pellets:3);
+}
+
+// Cadena elèctrica del fusell Tesla: salta d'un zombi al següent
+function chainLightning(b, origin, g) {
+  const range=b.chainRange||160;
+  const hitTargets=[origin];
+  let src=origin;
+  for (let j=0;j<b.chain;j++) {
+    let best=null, bd=Infinity;
+    for (const z of g.zombies) {
+      if (z.hp<=0||hitTargets.includes(z)) continue;
+      const d=dist(src,z);
+      if (d<range && d<bd) { bd=d; best=z; }
+    }
+    if (!best) break;
+    const dmg=b.damage*0.6*(1-(best.armor||0));
+    best.hp-=dmg; best.flashTimer=6; best.lastHitBy=b.owner;
+    g.arcs.push({x1:src.x,y1:src.y,x2:best.x,y2:best.y,life:9,maxLife:9});
+    g.damageNumbers.push({x:best.x,y:best.y-best.size-10,val:Math.round(dmg),alpha:1,vy:-1.2,life:35,crit:false});
+    spawnParticles(best.x,best.y,'#80d8ff',5);
+    hitTargets.push(best); src=best;
+  }
+  if (hitTargets.length>1) addKillMsg(`⚡ Cadena: ${hitTargets.length-1} zombis!`);
 }
 
 function reload(player) {
@@ -1210,6 +1683,7 @@ function reload(player) {
 
 function damagePlayer(player,dmg) {
   if (player.hp<=0) return;
+  if (player.invincible>0) return;
   if (Math.random()>0.95) {
     const reduced = dmg * (1-(player.armorReduction||0));
     player.hp=Math.max(0,player.hp-reduced);
@@ -1217,6 +1691,12 @@ function damagePlayer(player,dmg) {
       const flash=document.getElementById('damage-flash');
       flash.style.background='rgba(231,76,60,0.35)';
       setTimeout(()=>flash.style.background='rgba(231,76,60,0)',150);
+    }
+    // Multi: enter downed state instead of dying
+    if (player.hp<=0 && game && game.mode==='multi' && game.player2) {
+      player.downed = true;
+      const key = player.playerNum===1 ? 'SHIFT' : 'F';
+      addKillMsg(`💔 J${player.playerNum} HA CAIGUT! [${key}] per rescatar!`);
     }
   }
 }
@@ -1275,7 +1755,7 @@ function explodeRocket(b,g) {
 }
 
 function killZombie(z,owner) {
-  const g=game, pts=z.isBoss?(500+g.wave*20):(10+g.wave*5); g.score+=pts;
+  const g=game, pts=z.isBoss?(500+g.wave*20):(10+g.wave*5); g.score+=pts; g.kills++;
   if (owner){owner.xp+=(z.isBoss?500:30)+g.wave*5;checkLevelUp(owner);}
   const coinAmt=z.isBoss ? 35+g.wave*3 : ({normal:1,runner:2,tank:5,exploder:2,healer:3,armored:4,bomber:3}[z.ztype||'normal']||1);
   for(let c=0;c<coinAmt;c++) g.pickups.push({x:z.x+(Math.random()-0.5)*40,y:z.y+(Math.random()-0.5)*40,type:'coin',bobTime:0,coinVal:1});
@@ -1318,26 +1798,8 @@ function switchWeapon(player, dir) {
   player.damage=w.damage; player.shootRate=w.shootRate; player.reloadTime=w.reloadTime;
   player.reloading=false; player.shootCooldown=0;
   addKillMsg(`🔄 ${w.icon} ${w.name}`);
-  refreshInventoryBar(player);
 }
 
-function refreshInventoryBar(player) {
-  const bar=document.getElementById('inventory-bar');
-  if(!bar||!player.ownedWeapons) return;
-  bar.innerHTML='';
-  bar.style.display=player.ownedWeapons.length>1?'flex':'none';
-  player.ownedWeapons.forEach((slot,i)=>{
-    const w=WEAPONS[slot.key];
-    const div=document.createElement('div');
-    div.className='inv-slot'+(i===player.currentWeaponIdx?' active':'');
-    div.textContent=`${w.icon} ${w.name}`;
-    div.onclick=()=>{
-      const dir=(i-player.currentWeaponIdx+player.ownedWeapons.length)%player.ownedWeapons.length;
-      if(dir!==0) switchWeapon(player, dir>player.ownedWeapons.length/2?-1:dir);
-    };
-    bar.appendChild(div);
-  });
-}
 
 function toggleShop() {
   const overlay=document.getElementById('shop-overlay');
@@ -1376,6 +1838,13 @@ function refreshShopUI() {
     {key:'sniper',           desc:'6 bales • 150 dany • rang màxim\n1 tret cada 1.5s • recàrrega 5s'},
     {key:'bazooka',          desc:'5 coets • 60 dany • explosió AoE\nfoc al terra • recàrrega 5s'},
     {key:'grenade_launcher', desc:'8 granades • 80 dany • explosió gran\nrecàrrega 6s'},
+    {key:'minigun',          desc:'250 bales • 7 dany • cadència brutal\nmolta dispersió • recàrrega 10s'},
+    {key:'freeze_gun',       desc:'32 càrregues • 12 dany ×2\n❄️ congela i alenteix • recàrrega 4.5s'},
+    {key:'fire_crossbow',    desc:'12 fletxes • 45 dany\n🔥 incendia i travessa 1 • recàrrega 4.5s'},
+    {key:'laser_rifle',      desc:'40 cel·les • 20 dany\n⚡ travessa 3 enemics • recàrrega 4s'},
+    {key:'tesla_gun',        desc:'20 cèl·lules • 30 dany\n⚡ cadena a 3 zombis propers'},
+    {key:'plasma_cannon',    desc:'6 càrregues • 110 dany\nexplosió de plasma AoE'},
+    {key:'railgun',          desc:'4 trets • 220 dany • rang infinit\n☄️ travessa TOTS els enemics'},
   ];
   const container=document.getElementById('shop-items'); container.innerHTML='';
 
@@ -1506,6 +1975,19 @@ function buyArmor(level) {
   persistSavedData(); refreshShopUI();
 }
 
+// Desa TOTES les armes comprades (les de la botiga són les que tenen preu),
+// sigui quina sigui la seva posició a l'inventari. Abans es feia slice(1) i
+// perdies l'arma si la triaves com a arma inicial de la partida.
+function syncShopWeapons(player) {
+  const keys=[];
+  player.ownedWeapons.forEach(s=>{
+    if (WEAPONS[s.key] && WEAPONS[s.key].price && !keys.includes(s.key)) keys.push(s.key);
+  });
+  // conserva també les comprades que no s'han portat a aquesta partida
+  (savedData.shopWeapons||[]).forEach(k=>{ if(WEAPONS[k]&&!keys.includes(k)) keys.push(k); });
+  savedData.shopWeapons = keys;
+}
+
 function buyWeapon(key) {
   const w=WEAPONS[key]; if(!w) return;
   if(game&&game.player){
@@ -1519,9 +2001,8 @@ function buyWeapon(key) {
     player.damage=w.damage; player.shootRate=w.shootRate; player.reloadTime=w.reloadTime;
     player.reloading=false; player.shootCooldown=0;
     savedData.coins=player.coins;
-    savedData.shopWeapons=player.ownedWeapons.slice(1).map(s=>s.key);
+    syncShopWeapons(player);
     addKillMsg(`🛒 ${w.icon} ${w.name} equipat!`);
-    refreshInventoryBar(player);
   } else {
     if(savedData.coins<w.price||savedData.shopWeapons.includes(key)) return;
     savedData.coins-=w.price;
@@ -1771,6 +2252,7 @@ function draw() {
   g.pickups.forEach(pk=>drawPickup(pk));
   g.particles.forEach(pt=>drawParticle(pt));
   g.bullets.forEach(b=>drawBullet(b));
+  (g.arcs||[]).forEach(a=>drawArc(a));
   g.bombProjectiles.forEach(b=>drawBombProjectile(b));
   g.enemyBombs.forEach(b=>drawEnemyBomb(b));
   g.areaBlastZones.forEach(ab=>drawAreaBlast(ab));
@@ -1778,8 +2260,8 @@ function draw() {
   g.missileProjectiles.forEach(m=>drawMissileProjectile(m));
   g.zombies.forEach(z=>drawZombie(z));
   (g.bots||[]).forEach(b=>{ if(b.hp>0) drawBot(b); });
-  if (g.player2 && g.player2.hp>0) drawPlayer(g.player2);
-  if (g.player.hp>0) drawPlayer(g.player);
+  if (g.player2 && (g.player2.hp>0||g.player2.downed)) drawPlayer(g.player2);
+  if (g.player.hp>0||g.player.downed) drawPlayer(g.player);
   // Damage numbers (world space)
   g.damageNumbers.forEach(d=>{
     ctx.save();
@@ -1927,6 +2409,47 @@ function drawObstacles() {
 }
 
 function drawPlayer(p) {
+  // ── Downed state ──
+  if (p.downed) {
+    const pulse = 0.5+0.5*Math.sin(Date.now()/350);
+    ctx.save(); ctx.translate(p.x, p.y);
+    // Body lying flat (rotated 90°)
+    ctx.save(); ctx.rotate(Math.PI/2); ctx.globalAlpha=0.55;
+    ctx.fillStyle='#1c2833'; ctx.fillRect(-14,-8,28,16);  // pants/legs
+    ctx.fillStyle=p.color;   ctx.fillRect(-8,-7,16,14);   // jacket
+    ctx.fillStyle='#f0c898'; ctx.fillRect(11,-6,11,11);   // head
+    ctx.restore();
+    // Red X over body
+    ctx.globalAlpha=0.7+0.3*pulse;
+    ctx.strokeStyle='#e74c3c'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(-9,-9); ctx.lineTo(9,9); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(9,-9);  ctx.lineTo(-9,9); ctx.stroke();
+    // Pulsing danger ring
+    ctx.globalAlpha=0.4+0.5*pulse;
+    ctx.strokeStyle='#e74c3c'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(0,0,26,0,Math.PI*2); ctx.stroke();
+    // Key hint
+    ctx.globalAlpha=1;
+    const keyHint = p.playerNum===1 ? '[SHIFT]' : '[F]';
+    ctx.fillStyle='#fff'; ctx.shadowColor='#000'; ctx.shadowBlur=4;
+    ctx.font='bold 10px Courier New'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    ctx.fillText(keyHint, 0, -36);
+    ctx.shadowBlur=0;
+    // Revive progress arc (drawn by the other player's reviveProgress)
+    const prog = p.playerNum===1
+      ? ((game.player2 && game.player2.reviveProgress)||0)
+      : ((game.player  && game.player.reviveProgress) ||0);
+    if (prog>0) {
+      ctx.globalAlpha=0.9;
+      ctx.strokeStyle='#2ecc71'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(0,0,22,-Math.PI/2,-Math.PI/2+Math.PI*2*(prog/180),false); ctx.stroke();
+      ctx.fillStyle='#2ecc71'; ctx.font='bold 9px Courier New'; ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText(Math.round(prog/180*100)+'%', 0, 27);
+    }
+    ctx.restore();
+    return;
+  }
+
   const bob = Math.sin(p.bobTimer)*2;
 
   // Shadow
@@ -2301,10 +2824,40 @@ function drawBullet(b) {
     ctx.fillStyle='rgba(255,220,100,0.5)';ctx.beginPath();ctx.ellipse(-16,0,5,3,0,0,Math.PI*2);ctx.fill();
     ctx.shadowBlur=0;
   } else if(b.weaponType==='knife'){
-    ctx.shadowColor='#e0e0e0';ctx.shadowBlur=6;
-    ctx.fillStyle='#e0e0e0';
+    const fiery=b.burn>0;
+    ctx.shadowColor=fiery?'#ff6b35':'#e0e0e0';ctx.shadowBlur=fiery?12:6;
+    ctx.fillStyle=fiery?'#ff8a50':'#e0e0e0';
     ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-5,3.5);ctx.lineTo(-5,-3.5);ctx.closePath();ctx.fill();
     ctx.fillStyle='#8d6e63';ctx.fillRect(-8,-2,5,4);
+    if(fiery){ctx.fillStyle='rgba(255,180,60,0.55)';ctx.beginPath();ctx.ellipse(-11,0,7,3,0,0,Math.PI*2);ctx.fill();}
+    ctx.shadowBlur=0;
+  } else if(b.weaponType==='laser'){
+    ctx.shadowColor='#00e5ff';ctx.shadowBlur=16;
+    ctx.fillStyle='rgba(0,229,255,0.45)';ctx.fillRect(-20,-3,34,6);
+    ctx.fillStyle='#18ffff';ctx.fillRect(-16,-1.6,30,3.2);
+    ctx.fillStyle='#fff';ctx.fillRect(-6,-0.8,18,1.6);
+    ctx.shadowBlur=0;
+  } else if(b.weaponType==='ice'){
+    ctx.shadowColor='#4fc3f7';ctx.shadowBlur=12;
+    ctx.fillStyle='#b3e5fc';
+    ctx.beginPath();
+    for(let i=0;i<6;i++){const a=i*Math.PI/3;ctx.lineTo(Math.cos(a)*6,Math.sin(a)*6);}
+    ctx.closePath();ctx.fill();
+    ctx.fillStyle='#e1f5fe';ctx.beginPath();ctx.arc(0,0,2.4,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+  } else if(b.weaponType==='tesla'){
+    ctx.shadowColor='#00b0ff';ctx.shadowBlur=16;
+    ctx.strokeStyle='#80d8ff';ctx.lineWidth=2.4;
+    ctx.beginPath();ctx.moveTo(-12,0);
+    for(let i=1;i<=4;i++) ctx.lineTo(-12+i*6,(i%2?-4:4)*Math.random());
+    ctx.stroke();
+    ctx.fillStyle='#e1f5fe';ctx.beginPath();ctx.arc(10,0,3.4,0,Math.PI*2);ctx.fill();
+    ctx.shadowBlur=0;
+  } else if(b.weaponType==='rail'){
+    ctx.shadowColor='#e040fb';ctx.shadowBlur=22;
+    ctx.fillStyle='rgba(224,64,251,0.35)';ctx.fillRect(-40,-5,58,10);
+    ctx.fillStyle='#ea80fc';ctx.fillRect(-34,-2.6,52,5.2);
+    ctx.fillStyle='#fff';ctx.fillRect(-20,-1.2,38,2.4);
     ctx.shadowBlur=0;
   } else {
     ctx.shadowColor=b.color;ctx.shadowBlur=10;
@@ -2312,6 +2865,21 @@ function drawBullet(b) {
     ctx.fillStyle=b.color;ctx.beginPath();ctx.ellipse(-2,0,5,2,0,0,Math.PI*2);ctx.fill();
   }
   ctx.restore();
+}
+
+function drawArc(a) {
+  ctx.save();
+  ctx.globalAlpha=Math.max(0,a.life/a.maxLife);
+  ctx.strokeStyle='#80d8ff'; ctx.lineWidth=2.6;
+  ctx.shadowColor='#00b0ff'; ctx.shadowBlur=14;
+  ctx.beginPath(); ctx.moveTo(a.x1,a.y1);
+  const segs=7;
+  for(let i=1;i<segs;i++){
+    const t=i/segs;
+    ctx.lineTo(a.x1+(a.x2-a.x1)*t+(Math.random()-0.5)*16, a.y1+(a.y2-a.y1)*t+(Math.random()-0.5)*16);
+  }
+  ctx.lineTo(a.x2,a.y2); ctx.stroke();
+  ctx.shadowBlur=0; ctx.globalAlpha=1; ctx.restore();
 }
 
 function drawParticle(pt) {ctx.globalAlpha=pt.alpha;ctx.fillStyle=pt.color;ctx.beginPath();ctx.arc(pt.x,pt.y,pt.size,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}
@@ -2391,6 +2959,82 @@ function drawStructureAt(type,x,y,aimAngle) {
     ctx.fillStyle='#e67e22';ctx.beginPath();ctx.arc(0,-7,7,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='#f39c12';ctx.beginPath();ctx.arc(0,-11,5,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='#ffeb3b';ctx.beginPath();ctx.arc(0,-14,3,0,Math.PI*2);ctx.fill();
+
+  } else if(type==='fast_turret'){
+    ctx.fillStyle='rgba(0,0,0,0.3)';ctx.beginPath();ctx.ellipse(0,4,12,5,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#2a6';ctx.strokeStyle='#4c8';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,14,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.save();ctx.rotate(aimAngle);ctx.fillStyle='#3b7';ctx.fillRect(-2,-3,22,6);ctx.fillStyle='#2a6';ctx.fillRect(19,-4,5,8);ctx.restore();
+    ctx.fillStyle='#6db';ctx.beginPath();ctx.arc(0,0,6,0,Math.PI*2);ctx.fill();
+
+  } else if(type==='freezer'){
+    const now=Date.now();
+    ctx.globalAlpha=0.10+0.05*Math.sin(now/600);ctx.fillStyle='#b3e5fc';ctx.beginPath();ctx.arc(0,0,80,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+    ctx.strokeStyle='#4dd0e1';ctx.lineWidth=1.5;ctx.setLineDash([5,5]);ctx.beginPath();ctx.arc(0,0,80,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+    ctx.shadowColor='#00e5ff';ctx.shadowBlur=14;
+    ctx.fillStyle='#00acc1';ctx.beginPath();ctx.arc(0,0,13,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#e0f7fa';
+    for(let i=0;i<6;i++){const a=i*Math.PI/3;ctx.fillRect(Math.cos(a)*6-2,Math.sin(a)*6-2,4,4);}
+    ctx.shadowBlur=0;
+
+  } else if(type==='barrel'){
+    ctx.fillStyle='#8d4b0a';ctx.fillRect(-12,-14,24,28);
+    ctx.fillStyle='#5d3200';ctx.fillRect(-12,-14,24,4);ctx.fillRect(-12,3,24,4);ctx.fillRect(-12,12,24,4);
+    ctx.fillStyle='#c0392b';ctx.beginPath();ctx.arc(0,-4,6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#e74c3c';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('!',0,-4);
+
+  } else if(type==='tesla'){
+    const t=Date.now()/200;
+    ctx.strokeStyle='rgba(224,255,255,0.15)';ctx.lineWidth=8;ctx.beginPath();ctx.arc(0,0,110,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle='#b0bec5';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,16,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(0,0,16,0,Math.PI*2);ctx.fill();
+    ctx.shadowColor='#e1f5fe';ctx.shadowBlur=10+6*Math.abs(Math.sin(t));
+    ctx.strokeStyle='#e1f5fe';ctx.lineWidth=2;
+    for(let i=0;i<3;i++){const a=i*Math.PI*2/3+t;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*14,Math.sin(a)*14);ctx.stroke();}
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+
+  } else if(type==='dispenser'){
+    ctx.fillStyle='rgba(76,175,80,0.1)';ctx.beginPath();ctx.arc(0,0,40,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#1b5e20';ctx.fillRect(-10,-14,20,28);
+    ctx.fillStyle='#2e7d32';ctx.fillRect(-8,-8,16,16);
+    ctx.fillStyle='#a5d6a7';ctx.beginPath();ctx.arc(0,-2,5,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='bold 8px monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('+',0,-2);
+
+  } else if(type==='drone_combat'){
+    const t=Date.now()/80;
+    // Shadow
+    ctx.fillStyle='rgba(0,0,0,0.22)';ctx.beginPath();ctx.ellipse(2,6,14,5,0,0,Math.PI*2);ctx.fill();
+    // Spinning rotor arms + blades
+    ctx.save();ctx.rotate(t);
+    ctx.strokeStyle='#455a64';ctx.lineWidth=2;
+    for(let i=0;i<4;i++){const a=i*Math.PI/2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*15,Math.sin(a)*15);ctx.stroke();}
+    ctx.fillStyle='rgba(0,229,255,0.45)';
+    for(let i=0;i<4;i++){const a=i*Math.PI/2;const rx=Math.cos(a)*15,ry=Math.sin(a)*15;ctx.beginPath();ctx.ellipse(rx,ry,8,2,a,0,Math.PI*2);ctx.fill();}
+    ctx.restore();
+    // Body glow
+    ctx.shadowColor='#00e5ff';ctx.shadowBlur=10;
+    ctx.fillStyle='#263238';ctx.beginPath();ctx.arc(0,0,8,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#00e5ff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,8,0,Math.PI*2);ctx.stroke();
+    // Gun barrel pointing at aim angle
+    ctx.save();ctx.rotate(aimAngle);ctx.fillStyle='#78909c';ctx.fillRect(5,-2,11,4);ctx.fillStyle='#b0bec5';ctx.fillRect(14,-1.5,4,3);ctx.restore();
+    ctx.fillStyle='#00e5ff';ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+
+  } else if(type==='drone_healer'){
+    const t=Date.now()/100;
+    // Shadow
+    ctx.fillStyle='rgba(0,0,0,0.22)';ctx.beginPath();ctx.ellipse(2,6,14,5,0,0,Math.PI*2);ctx.fill();
+    // Spinning rotor arms + blades
+    ctx.save();ctx.rotate(-t*0.75);
+    ctx.strokeStyle='#1b5e20';ctx.lineWidth=2;
+    for(let i=0;i<4;i++){const a=i*Math.PI/2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(a)*15,Math.sin(a)*15);ctx.stroke();}
+    ctx.fillStyle='rgba(105,240,174,0.45)';
+    for(let i=0;i<4;i++){const a=i*Math.PI/2;const rx=Math.cos(a)*15,ry=Math.sin(a)*15;ctx.beginPath();ctx.ellipse(rx,ry,8,2,a,0,Math.PI*2);ctx.fill();}
+    ctx.restore();
+    // Body glow
+    ctx.shadowColor='#69f0ae';ctx.shadowBlur=10;
+    ctx.fillStyle='#1a3d28';ctx.beginPath();ctx.arc(0,0,8,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#69f0ae';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,8,0,Math.PI*2);ctx.stroke();
+    // Medical cross
+    ctx.fillStyle='#69f0ae';ctx.fillRect(-1.5,-5.5,3,11);ctx.fillRect(-5.5,-1.5,11,3);ctx.shadowBlur=0;
   }
   ctx.restore();
 }
@@ -2411,7 +3055,6 @@ function updateUI() {
   document.getElementById('ammo-count').textContent=p.reloading?'RECARREGANT...':isFlame?`${Math.ceil(p.ammo/60)}s`:`${p.ammo}/${p.maxAmmo}`;
   document.getElementById('weapon-badge').textContent=`${p.weapon.icon} ${p.weapon.name}`;
   document.getElementById('coin-display').textContent=`🪙 ${p.coins}`;
-  refreshInventoryBar(p);
   document.getElementById('bomb-count').textContent=p.bombs>0?`💣 ${p.bombs}`:'';
   const sb=[];if(p.mines>0)sb.push(`💣 Mina ×${p.mines} [X]`);if(p.areaBlasts>0)sb.push(`☢️ Expansiva ×${p.areaBlasts} [C]`);if(p.missiles>0)sb.push(`🚀 Míssil ×${p.missiles} [V]`);document.getElementById('special-bombs').innerHTML=sb.join('<br>');
   const names=['Poció Vida','Poció Velocitat','Poció Dany'];
@@ -2433,40 +3076,80 @@ function updateUI() {
 }
 
 // ── LEVEL UP ──────────────────────────────────────────────────────────────────
+const LEVEL_UPGRADES = [
+  // Vida & Curació
+  {icon:'❤️', name:'VIDA MÀXIMA',    desc:'+25 vida màxima i cura 25 HP',             w:10, fn:p=>{p.maxHp+=25;p.hp=Math.min(p.maxHp,p.hp+25);}},
+  {icon:'💉', name:'CURA TOTAL',     desc:'Restaura tota la vida al màxim',            w:3,  fn:p=>{p.hp=p.maxHp;}},
+  {icon:'🩺', name:'KIT MÈDIC',      desc:'+50 vida màxima i cura 50 HP',              w:10, fn:p=>{p.maxHp+=50;p.hp=Math.min(p.maxHp,p.hp+50);}},
+  {icon:'🩸', name:'VAMPIR',         desc:'+3 Pocions de Vida',                        w:10, fn:p=>{p.potions[0]+=3;}},
+  // Moviment
+  {icon:'⚡', name:'VELOCITAT',      desc:'+0.5 velocitat de moviment',                w:10, fn:p=>{p.speed+=0.5;}},
+  {icon:'🌀', name:'ADRENALINA',     desc:'+1.0 velocitat i +5 dany',                  w:10, fn:p=>{p.speed+=1.0;p.damage+=5;}},
+  // Atac
+  {icon:'💥', name:'DANY',           desc:'+10 dany per bala',                         w:10, fn:p=>{p.damage+=10;}},
+  {icon:'💪', name:'FORÇA BRUTA',    desc:'+20 dany i +15 vida màxima',                w:10, fn:p=>{p.damage+=20;p.maxHp+=15;p.hp=Math.min(p.maxHp,p.hp+15);}},
+  {icon:'🔫', name:'CADÈNCIA',       desc:'Dispara un 20% més ràpid',                  w:10, fn:p=>{p.shootRate=Math.max(5,Math.floor(p.shootRate*0.8));}},
+  {icon:'🎯', name:'DOBLE CADÈNCIA', desc:'Dispara un 35% més ràpid',                  w:3,  fn:p=>{p.shootRate=Math.max(5,Math.floor(p.shootRate*0.65));}},
+  {icon:'🔄', name:'RECÀRREGA+',     desc:'Recarrega un 30% més ràpid',                w:10, fn:p=>{p.reloadTime=Math.max(30,Math.floor(p.reloadTime*0.70));}},
+  // Munició
+  {icon:'📦', name:'MUNICIÓ',        desc:'+15 capacitat màxima de munició',           w:10, fn:p=>{p.maxAmmo+=15;p.ammo=p.maxAmmo;}},
+  {icon:'🎲', name:'DOBLAR MUNICIÓ', desc:'Dobla la capacitat màxima de munició',      w:3,  fn:p=>{p.maxAmmo=Math.floor(p.maxAmmo*2);p.ammo=p.maxAmmo;}},
+  // Especials
+  {icon:'🔥', name:'BALA DE FOC',    desc:'Les bales cremen els zombis (DoT)',          w:10, fn:p=>{p.fireBullets=(p.fireBullets||0)+1;}},
+  {icon:'🛡', name:'BLINDATGE',      desc:'-15% dany rebut addicional',                w:10, fn:p=>{p.armorReduction=Math.min(0.80,(p.armorReduction||0)+0.15);}},
+  {icon:'🧲', name:'IMANT',          desc:'Recull items des del doble de lluny',        w:10, fn:p=>{p.pickupRadius=(p.pickupRadius||1)+0.8;}},
+  // Recursos
+  {icon:'🪙', name:'FORTUNA',        desc:'+40 monedes a l\'instant',                  w:10, fn:p=>{p.coins+=40;}},
+  {icon:'💣', name:'ARSENAL',        desc:'+2 mines, +1 bomba expansiva, +1 míssil',   w:10, fn:p=>{p.mines+=2;p.areaBlasts+=1;p.missiles+=1;}},
+  {icon:'⚗️', name:'BOTIGUER',       desc:'+2 de cada tipus de poció',                 w:10, fn:p=>{p.potions[0]+=2;p.potions[1]+=2;p.potions[2]+=2;}},
+  // Salvatge
+  {icon:'💫', name:'SORT LOCA',      desc:'Aplica 3 millores aleatòries alhora!',      w:3,  fn:p=>{LEVEL_UPGRADES.filter(u=>u.name!=='SORT LOCA').sort(()=>Math.random()-0.5).slice(0,3).forEach(u=>u.fn(p));}},
+];
+
 function showLevelUp() {
   game.running=false;
   const pl=levelingPlayer||game.player;
-  const upgrades=[
-    {icon:'❤️',name:'VIDA MÀXIMA', desc:'+25 vida màxima i cura 25 HP',fn:p=>{p.maxHp+=25;p.hp=Math.min(p.maxHp,p.hp+25);}},
-    {icon:'⚡',name:'VELOCITAT',   desc:'+0.5 velocitat',              fn:p=>{p.speed+=0.5;}},
-    {icon:'🔫',name:'CADÈNCIA',    desc:'Dispara un 20% més ràpid',     fn:p=>{p.shootRate=Math.max(5,Math.floor(p.shootRate*0.8));}},
-    {icon:'💥',name:'DANY',        desc:'+10 dany per bala',            fn:p=>{p.damage+=10;}},
-    {icon:'📦',name:'MUNICIÓ',     desc:'+10 capacitat de munició',     fn:p=>{p.maxAmmo+=10;p.ammo=p.maxAmmo;}},
-    {icon:'🩸',name:'VAMPIR',      desc:'+3 Pocions de Vida',           fn:p=>{p.potions[0]+=3;}},
-  ];
   document.getElementById('levelup-sub').textContent=`JUGADOR ${pl.playerNum} — TRIA UNA MILLORA`;
-  const chosen=upgrades.sort(()=>Math.random()-0.5).slice(0,3);
+  // Selecció ponderada: escull 3 millores úniques respectant el pes de cadascuna
+  const chosen=[];
+  const pool=[...LEVEL_UPGRADES];
+  while(chosen.length<3&&pool.length>0){
+    const total=pool.reduce((s,u)=>s+u.w,0);
+    let r=Math.random()*total;
+    const idx=pool.findIndex(u=>{r-=u.w;return r<=0;});
+    chosen.push(pool.splice(idx<0?pool.length-1:idx,1)[0]);
+  }
   const container=document.getElementById('upgrade-cards'); container.innerHTML='';
   chosen.forEach(u=>{
     const card=document.createElement('div'); card.className='upgrade-card';
     card.innerHTML=`<div class="icon">${u.icon}</div><div class="name">${u.name}</div><div class="desc">${u.desc}</div>`;
-    card.onclick=()=>{u.fn(pl);document.getElementById('levelup-screen').classList.remove('active');game.running=true;requestAnimationFrame(loop);};
+    card.onclick=()=>{u.fn(pl);document.getElementById('levelup-screen').classList.remove('active');levelingPlayer=null;game.running=true;requestAnimationFrame(loop);};
     container.appendChild(card);
   });
   document.getElementById('levelup-screen').classList.add('active');
 }
 
 // ── STRUCTURES ────────────────────────────────────────────────────────────────
+const STRUCTURE_DEFS = [
+  {type:'turret',      icon:'🔧', name:'TORETA',           desc:'Dispara als zombis propers cada 1.5s.',              stats:[['VIDA','20'],['DANY','20'],['ABAST','200px'],['CADÈNCIA','1.5s']]},
+  {type:'fast_turret', icon:'🔩', name:'TORETA RÀPIDA',    desc:'Dispara ràpid però fa menys dany.',                  stats:[['VIDA','15'],['DANY','12'],['ABAST','180px'],['CADÈNCIA','0.5s']]},
+  {type:'fence',       icon:'⚡', name:'BALLA ELÈCTRICA',  desc:'Electrocuta els zombis propers. Indestructible.',     stats:[['VIDA','∞'],['DANY','35/xoc'],['ABAST','80px'],['DURADA','∞']]},
+  {type:'campfire',    icon:'🏕️', name:'FOGUERA',           desc:'Cura 10 HP/seg i +50% velocitat a prop.',            stats:[['VIDA','25'],['CURA','10/seg'],['VELOCITAT','+50%'],['ABAST','80px']]},
+  {type:'freezer',     icon:'❄️', name:'CONGELADOR',        desc:'Congela els zombis propers: −60% velocitat.',        stats:[['VIDA','∞'],['EFECTE','−60% vel'],['ABAST','80px'],['DURADA','∞']]},
+  {type:'barrel',      icon:'💥', name:'BARRIL EXPLOSIU',  desc:'Explota en morir o quan s\'acosta un zombi.',         stats:[['VIDA','40'],['DANY EXPLOSIÓ','150'],['RADI','160px'],['USOS','1']]},
+  {type:'tesla',       icon:'🌩️', name:'TORRE TESLA',      desc:'Cada 2s, encadena llamp a 3 zombis propers.',        stats:[['VIDA','25'],['DANY/ZOMBi','70'],['ABAST','110px'],['CADÈNCIA','2s']]},
+  {type:'dispenser',   icon:'💊', name:'DISPENSADOR',      desc:'Genera una poció de vida cada 12 segons.',            stats:[['VIDA','20'],['GENERA','1 poció/12s'],['ABAST','—'],['DURADA','fins destruït']]},
+  {type:'drone_combat',icon:'🚁', name:'DRON DE COMBAT',   desc:'Orbita el jugador i dispara als zombis propers cada 1.5s.',  stats:[['VIDA','30'],['DANY','25'],['ABAST','220px'],['CADÈNCIA','1.5s']]},
+  {type:'drone_healer',icon:'🏥', name:'DRON CURADOR',     desc:'Orbita el jugador i cura 8 HP cada 6s quan tens menys del 70% de vida.', stats:[['VIDA','25'],['CURA','8 HP/6s'],['CONDICIÓ','<70% HP'],['DURADA','fins destruït']]},
+];
+
 function showStructureChoice() {
   game.running=false;
   const screen=document.getElementById('structure-screen');
   const container=document.getElementById('structure-cards'); container.innerHTML='';
-  const defs=[
-    {type:'turret',  icon:'🔧',name:'TORETA',        desc:'Dispara automàticament als zombis propers cada 1.5s.',stats:[['VIDA','20'],['DANY','20'],['ABAST','200px'],['CADÈNCIA','Lenta']]},
-    {type:'fence',   icon:'⚡',name:'BALLA ELÈCTRICA',desc:'Electrocuta els zombis que s\'acosten. Indestructible.',stats:[['VIDA','∞'],['DANY','35/xoc'],['ABAST','80px'],['DURADA','∞']]},
-    {type:'campfire',icon:'🏕️',name:'FOGUERA',        desc:'Cura 10 HP/seg i dóna velocitat mentre hi ets a prop.',stats:[['VIDA','25'],['CURA','10/seg'],['VELOCITAT','+50%'],['ABAST','80px']]},
-  ];
-  defs.forEach(d=>{
+  // Mostra 3 aleatòries del pool complet
+  const chosen=[...STRUCTURE_DEFS].sort(()=>Math.random()-0.5).slice(0,3);
+  chosen.forEach(d=>{
     const card=document.createElement('div'); card.className='upgrade-card';
     card.innerHTML=`<div class="icon">${d.icon}</div><div class="name">${d.name}</div><div class="desc">${d.desc}</div><div style="margin-top:10px">${d.stats.map(s=>`<div style="display:flex;justify-content:space-between;border-bottom:1px solid #222;padding:3px 0;font-size:10px;color:#666">${s[0]}<span style="color:#f39c12">${s[1]}</span></div>`).join('')}</div>`;
     card.onclick=()=>{
@@ -2482,9 +3165,21 @@ function showStructureChoice() {
 
 function placeStructure(x,y) {
   const type=game.placingStructure; game.placingStructure=null;
-  const base={turret:{hp:20,maxHp:20,aimAngle:0},fence:{hp:Infinity,maxHp:Infinity},campfire:{hp:25,maxHp:25}}[type];
-  game.structures.push({type,x,y,timer:0,...base});
-  addKillMsg(`✅ ${{turret:'Toreta',fence:'Balla elèctrica',campfire:'Foguera'}[type]} col·locada!`);
+  const bases={
+    turret:       {hp:20, maxHp:20,  aimAngle:0},
+    fast_turret:  {hp:15, maxHp:15,  aimAngle:0},
+    fence:        {hp:Infinity, maxHp:Infinity},
+    campfire:     {hp:25, maxHp:25},
+    freezer:      {hp:Infinity, maxHp:Infinity},
+    barrel:       {hp:40, maxHp:40,  exploded:false},
+    tesla:        {hp:25, maxHp:25},
+    dispenser:    {hp:20, maxHp:20},
+    drone_combat: {hp:30, maxHp:30,  aimAngle:0, vx:0, vy:0},
+    drone_healer: {hp:25, maxHp:25,              vx:0, vy:0},
+  };
+  const names={turret:'Toreta',fast_turret:'Toreta Ràpida',fence:'Balla elèctrica',campfire:'Foguera',freezer:'Congelador',barrel:'Barril Explosiu',tesla:'Torre Tesla',dispenser:'Dispensador',drone_combat:'Dron de Combat',drone_healer:'Dron Curador'};
+  game.structures.push({type,x,y,timer:0,...(bases[type]||{hp:20,maxHp:20})});
+  addKillMsg(`✅ ${names[type]||type} col·locada!`);
 }
 
 // ── GAME OVER ─────────────────────────────────────────────────────────────────
@@ -2492,22 +3187,29 @@ function gameOver() {
   game.running=false;
   const p=game.player;
   savedData.coins = p.coins;
-  savedData.shopWeapons = p.ownedWeapons.slice(1).map(w=>w.key);
+  syncShopWeapons(p);
   savedData.savedBombs = { mine:p.mines, areaBlast:p.areaBlasts, missile:p.missiles };
   persistSavedData();
+  // Desa el resultat al rànquing (local sempre, i a la cua per al global)
+  const records = recordRun(p.coins, game.kills, game.score);
+  queueRun(p.coins, game.kills, game.score);
   document.getElementById('gameover-stats').innerHTML = game.mode==='arena'
-    ? `TEMPS AGUANTAT: ${formatTime(game.arenaTimer)}<br>IAs ELIMINADES: ${Math.floor(game.score/50)}<br>PUNTUACIÓ: ${game.score}`
-    : `PUNTUACIÓ: ${game.score}<br>ONADA: ${game.wave}<br>NIVELL J1: ${p.level}${game.player2?`<br>NIVELL J2: ${game.player2.level}`:''}`;
+    ? `JUGADOR: ${escapeHtml(getPlayerName())}<br>TEMPS AGUANTAT: ${formatTime(game.arenaTimer)}<br>IAs ELIMINADES: ${Math.floor(game.score/50)}<br>PUNTUACIÓ: ${game.score}`
+    : `JUGADOR: ${escapeHtml(getPlayerName())}<br>PUNTUACIÓ: ${game.score}<br>ZOMBIS ELIMINATS: ${game.kills}<br>ONADA: ${game.wave}<br>NIVELL J1: ${p.level}${game.player2?`<br>NIVELL J2: ${game.player2.level}`:''}`;
+  document.getElementById('record-msg').textContent = records.length ? `⭐ NOU RÈCORD: ${records.join(' + ')}` : '';
   document.getElementById('arena-timer').style.display='none';
   document.getElementById('boss-bar-wrap').style.display='none';
   document.getElementById('shop-btn').style.display='none';
   document.getElementById('coin-display').style.display='none';
-  document.getElementById('inventory-bar').style.display='none';
   document.getElementById('shop-overlay').classList.remove('open');
+  document.getElementById('levelup-screen').classList.remove('active');
+  document.getElementById('structure-screen').classList.remove('active');
   document.getElementById('gameover-screen').classList.add('active');
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
+document.getElementById('player-name-input').value = savedData.playerName || '';
+if (rankingOnline()) { flushPending(); fetchRemoteRanking(); }   // envia el que hagués quedat pendent
 document.getElementById('shop-btn').style.display = 'block';
 document.getElementById('coin-display').style.display = 'block';
 document.getElementById('coin-display').textContent = `🪙 ${savedData.coins}`;
