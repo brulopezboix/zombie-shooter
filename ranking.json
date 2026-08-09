@@ -8,19 +8,19 @@
     "updated": "2026-08-09T09:47:56.894Z"
   },
   {
+    "name": "LOKER",
+    "coins": 40,
+    "kills": 0,
+    "score": 400,
+    "games": 3,
+    "updated": "2026-08-09T09:52:11.714Z"
+  },
+  {
     "name": "DOMINOS345",
     "coins": 5,
     "kills": 13,
     "score": 200,
     "games": 2,
     "updated": "2026-08-08T21:47:47.473Z"
-  },
-  {
-    "name": "LOKER",
-    "coins": 0,
-    "kills": 0,
-    "score": 0,
-    "games": 2,
-    "updated": "2026-08-09T09:49:58.578Z"
   }
 ]
