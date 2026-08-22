@@ -48,6 +48,14 @@
     "updated": "2026-08-09T20:48:26.287Z"
   },
   {
+    "name": "ANÒNIM",
+    "coins": 97121,
+    "kills": 23,
+    "score": 440,
+    "games": 2,
+    "updated": "2026-08-22T15:34:10.572Z"
+  },
+  {
     "name": "LOKER",
     "coins": 43,
     "kills": 3,
@@ -62,13 +70,5 @@
     "score": 200,
     "games": 2,
     "updated": "2026-08-08T21:47:47.473Z"
-  },
-  {
-    "name": "ANÒNIM",
-    "coins": 97121,
-    "kills": 0,
-    "score": 100,
-    "games": 1,
-    "updated": "2026-08-09T10:12:46.313Z"
   }
 ]
